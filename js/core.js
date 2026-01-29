@@ -12,7 +12,6 @@ const tools = [
 ];
 
 let currentTool = 'mongo.bindata';
-let paletteIndex = 0;
 
 // ============================================
 // Theme
@@ -65,6 +64,7 @@ const palette = {
     el: null,
     input: null,
     list: null,
+    index: 0,
 
     init() {
         this.el = document.getElementById('palette');
@@ -87,7 +87,7 @@ const palette = {
         this.input.value = '';
         this.render(tools);
         this.input.focus();
-        paletteIndex = 0;
+        this.index = 0;
         this.updateSelection();
     },
 
@@ -102,7 +102,7 @@ const palette = {
         }
 
         this.list.innerHTML = items.map((t, i) => `
-            <button class="palette-item${i === paletteIndex ? ' selected' : ''}" data-id="${t.id}">
+            <button class="palette-item${i === this.index ? ' selected' : ''}" data-id="${t.id}">
                 <span class="name"><span class="scope">${t.scope}.</span>${t.name}</span>
                 <span class="desc">${t.desc}${t.soon ? ' (soon)' : ''}</span>
             </button>
@@ -116,9 +116,9 @@ const palette = {
     updateSelection() {
         const items = this.list.querySelectorAll('.palette-item');
         items.forEach((item, i) => {
-            item.classList.toggle('selected', i === paletteIndex);
+            item.classList.toggle('selected', i === this.index);
         });
-        items[paletteIndex]?.scrollIntoView({ block: 'nearest' });
+        items[this.index]?.scrollIntoView({ block: 'nearest' });
     },
 
     select(id) {
@@ -139,7 +139,7 @@ const palette = {
         const filtered = tools.filter(t =>
             t.id.includes(q) || t.name.includes(q) || t.desc.includes(q)
         );
-        paletteIndex = 0;
+        this.index = 0;
         this.render(filtered);
     },
 
@@ -148,15 +148,15 @@ const palette = {
 
         if (e.key === 'ArrowDown') {
             e.preventDefault();
-            paletteIndex = Math.min(paletteIndex + 1, items.length - 1);
+            this.index = Math.min(this.index + 1, items.length - 1);
             this.updateSelection();
         } else if (e.key === 'ArrowUp') {
             e.preventDefault();
-            paletteIndex = Math.max(paletteIndex - 1, 0);
+            this.index = Math.max(this.index - 1, 0);
             this.updateSelection();
         } else if (e.key === 'Enter') {
             e.preventDefault();
-            const selected = items[paletteIndex];
+            const selected = items[this.index];
             if (selected) this.select(selected.dataset.id);
         } else if (e.key === 'Escape') {
             this.close();

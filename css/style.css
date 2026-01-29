@@ -1,10 +1,6 @@
 /* /etc/tools - minimal developer utilities */
 
-/* Fonts */
-/* JetBrains Mono - primary */
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
-/* IBM Plex Mono */
-/* @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap'); */
+/* Fonts loaded via <link> in HTML for better performance */
 
 * {
     margin: 0;
