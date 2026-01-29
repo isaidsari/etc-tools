@@ -9,13 +9,13 @@
     }
     @media (prefers-color-scheme: light) {
       .bg { fill: #fafafa; }
-      .cursor { fill: #111; }
+      .fg { fill: #111; }
     }
     @media (prefers-color-scheme: dark) {
       .bg { fill: #111; }
-      .cursor { fill: #eee; }
+      .fg { fill: #0f0; }
     }
   </style>
   <rect class="bg" width="32" height="32"/>
-  <rect class="cursor" x="12" y="8" width="8" height="16" rx="1"/>
+  <rect class="cursor fg" x="10" y="18" width="12" height="3"/>
 </svg>
