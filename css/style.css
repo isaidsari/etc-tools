@@ -1,0 +1,639 @@
+/* /etc/tools - minimal developer utilities */
+
+/* Fonts */
+/* JetBrains Mono - primary */
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
+/* IBM Plex Mono */
+/* @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap'); */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --font: 'JetBrains Mono', monospace;
+    /* --font: 'IBM Plex Mono', monospace; */
+
+    --bg: #fafafa;
+    --fg: #111;
+    --fg2: #666;
+    --fg3: #999;
+    --border: #ddd;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg: #111;
+        --fg: #eee;
+        --fg2: #888;
+        --fg3: #555;
+        --border: #333;
+    }
+}
+
+[data-theme="light"] {
+    --bg: #fafafa;
+    --fg: #111;
+    --fg2: #666;
+    --fg3: #999;
+    --border: #ddd;
+}
+
+[data-theme="dark"] {
+    --bg: #111;
+    --fg: #eee;
+    --fg2: #888;
+    --fg3: #555;
+    --border: #333;
+}
+
+html {
+    font-family: var(--font);
+    font-size: 13px;
+    line-height: 1.6;
+    background: var(--bg);
+    color: var(--fg);
+}
+
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+a {
+    color: inherit;
+}
+
+/* ============================================
+   Header
+   ============================================ */
+
+header {
+    border-bottom: 1px solid var(--border);
+    padding: 0 20px;
+    height: 48px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+    z-index: 10;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.cursor {
+    display: inline-block;
+    width: 8px;
+    height: 16px;
+    background: var(--fg);
+    margin-left: 2px;
+    animation: blink 1s step-end infinite;
+}
+
+@keyframes blink {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0;
+    }
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.tool-trigger {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--fg);
+    font: inherit;
+    cursor: pointer;
+}
+
+.tool-trigger:hover {
+    border-color: var(--fg3);
+}
+
+.tool-trigger .scope {
+    color: var(--fg3);
+}
+
+.tool-trigger kbd {
+    font: inherit;
+    font-size: 11px;
+    color: var(--fg3);
+    margin-left: 8px;
+}
+
+.theme-switch {
+    font-size: 12px;
+    color: var(--fg3);
+    background: none;
+    border: none;
+    font: inherit;
+    cursor: pointer;
+}
+
+.theme-switch:hover {
+    color: var(--fg);
+}
+
+/* ============================================
+   Command Palette
+   ============================================ */
+
+.palette-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 100;
+    display: none;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 100px;
+}
+
+.palette-overlay.open {
+    display: flex;
+}
+
+.palette {
+    width: 100%;
+    max-width: 480px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2);
+}
+
+.palette-input {
+    width: 100%;
+    padding: 14px 16px;
+    background: none;
+    border: none;
+    border-bottom: 1px solid var(--border);
+    color: var(--fg);
+    font: inherit;
+    font-size: 14px;
+    outline: none;
+}
+
+.palette-input::placeholder {
+    color: var(--fg3);
+}
+
+.palette-list {
+    max-height: 320px;
+    overflow-y: auto;
+}
+
+.palette-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    cursor: pointer;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+    font: inherit;
+    color: var(--fg);
+}
+
+.palette-item:hover,
+.palette-item.selected {
+    background: color-mix(in srgb, var(--fg) 8%, var(--bg));
+}
+
+.palette-item .name {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.palette-item .scope {
+    color: var(--fg3);
+}
+
+.palette-item .desc {
+    font-size: 12px;
+    color: var(--fg3);
+}
+
+.palette-empty {
+    padding: 20px 16px;
+    color: var(--fg3);
+    text-align: center;
+}
+
+/* ============================================
+   Main Content
+   ============================================ */
+
+main {
+    flex: 1;
+    padding: 32px 20px;
+    max-width: 640px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.tool-title {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--fg3);
+    margin-bottom: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+/* ============================================
+   Tool Container
+   ============================================ */
+
+.tool {
+    border: 1px solid var(--border);
+}
+
+.tool-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+}
+
+.tool-tab {
+    flex: 1;
+    padding: 12px;
+    background: none;
+    border: none;
+    font: inherit;
+    color: var(--fg3);
+    cursor: pointer;
+    position: relative;
+}
+
+.tool-tab:hover {
+    color: var(--fg2);
+}
+
+.tool-tab.active {
+    color: var(--fg);
+}
+
+.tool-tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 16px;
+    right: 16px;
+    height: 1px;
+    background: var(--fg);
+}
+
+.tool-body {
+    padding: 20px;
+}
+
+.panel {
+    display: none;
+}
+
+.panel.active {
+    display: block;
+}
+
+/* ============================================
+   Form Elements
+   ============================================ */
+
+label {
+    display: block;
+    font-size: 11px;
+    color: var(--fg3);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+textarea {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--fg);
+    font: inherit;
+    padding: 12px;
+    resize: vertical;
+    min-height: 80px;
+}
+
+textarea:focus {
+    outline: none;
+    border-color: var(--fg3);
+}
+
+textarea::placeholder {
+    color: var(--fg3);
+}
+
+.field {
+    margin-bottom: 16px;
+}
+
+/* Segmented Controls */
+.seg {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 16px;
+}
+
+.seg label {
+    display: block;
+    margin: 0;
+    text-transform: none;
+    letter-spacing: normal;
+    font-size: 13px;
+}
+
+.seg input {
+    display: none;
+}
+
+.seg span {
+    display: block;
+    padding: 8px 14px;
+    border: 1px solid var(--border);
+    color: var(--fg2);
+    cursor: pointer;
+    transition: all 0.1s;
+}
+
+.seg span:hover {
+    border-color: var(--fg3);
+    color: var(--fg);
+}
+
+.seg input:checked+span {
+    border-color: var(--fg);
+    color: var(--fg);
+    background: color-mix(in srgb, var(--fg) 5%, var(--bg));
+}
+
+.seg-label {
+    width: 100%;
+    font-size: 11px;
+    color: var(--fg3);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* ============================================
+   Buttons
+   ============================================ */
+
+.actions {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.btn {
+    padding: 10px 24px;
+    font: inherit;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: none;
+    color: var(--fg2);
+}
+
+.btn:hover {
+    border-color: var(--fg3);
+    color: var(--fg);
+}
+
+.btn-primary {
+    background: var(--fg);
+    border-color: var(--fg);
+    color: var(--bg);
+}
+
+.btn-primary:hover {
+    opacity: 0.9;
+    color: var(--bg);
+}
+
+/* ============================================
+   Output
+   ============================================ */
+
+.output-wrap {
+    position: relative;
+}
+
+.output {
+    background: color-mix(in srgb, var(--fg) 3%, var(--bg));
+    border: 1px solid var(--border);
+    padding: 14px;
+    min-height: 56px;
+    word-break: break-all;
+}
+
+.output:empty::before {
+    content: 'output';
+    color: var(--fg3);
+}
+
+.output-copy {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    padding: 4px 10px;
+    font: inherit;
+    font-size: 11px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--fg3);
+    cursor: pointer;
+}
+
+.output-copy:hover {
+    color: var(--fg);
+}
+
+.output-meta {
+    margin-top: 8px;
+    font-size: 11px;
+    color: var(--fg3);
+}
+
+/* ============================================
+   Reference Section
+   ============================================ */
+
+.ref {
+    border: 1px solid var(--border);
+    margin-top: 16px;
+}
+
+.ref summary {
+    padding: 12px 16px;
+    cursor: pointer;
+    color: var(--fg2);
+    font-size: 12px;
+    list-style: none;
+}
+
+.ref summary::-webkit-details-marker {
+    display: none;
+}
+
+.ref summary::before {
+    content: '+ ';
+    color: var(--fg3);
+}
+
+.ref[open] summary::before {
+    content: '− ';
+}
+
+.ref summary:hover {
+    color: var(--fg);
+}
+
+.ref[open] summary {
+    border-bottom: 1px solid var(--border);
+}
+
+.ref-body {
+    padding: 16px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+
+th,
+td {
+    text-align: left;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+}
+
+th {
+    color: var(--fg3);
+    font-weight: 500;
+}
+
+tr:last-child td {
+    border-bottom: none;
+}
+
+code {
+    background: color-mix(in srgb, var(--fg) 8%, var(--bg));
+    padding: 2px 6px;
+    font-size: 12px;
+}
+
+.ref-link {
+    display: inline-block;
+    margin-top: 12px;
+    font-size: 12px;
+    color: var(--fg3);
+}
+
+.ref-link:hover {
+    color: var(--fg);
+}
+
+/* ============================================
+   Footer
+   ============================================ */
+
+footer {
+    border-top: 1px solid var(--border);
+    padding: 12px 20px;
+    font-size: 11px;
+    color: var(--fg3);
+    text-align: center;
+}
+
+footer a {
+    color: var(--fg2);
+    text-decoration: none;
+}
+
+footer a:hover {
+    color: var(--fg);
+}
+
+/* ============================================
+   Toast
+   ============================================ */
+
+.toast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(60px);
+    background: var(--fg);
+    color: var(--bg);
+    padding: 10px 20px;
+    font-size: 12px;
+    opacity: 0;
+    transition: all 0.15s;
+    pointer-events: none;
+}
+
+.toast.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+}
+
+/* ============================================
+   Responsive
+   ============================================ */
+
+@media (max-width: 540px) {
+    header {
+        padding: 0 16px;
+    }
+
+    main {
+        padding: 24px 16px;
+    }
+
+    .tool-trigger kbd {
+        display: none;
+    }
+
+    .palette {
+        margin: 0 16px;
+    }
+
+    .seg span {
+        padding: 8px 10px;
+        font-size: 12px;
+    }
+}
