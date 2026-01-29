@@ -13,11 +13,11 @@
 
 <body>
     <header>
-        <a href="/" class="logo">/etc/tools<span class="cursor"></span></a>
+        <a href="#" class="logo">/etc/tools<span class="cursor"></span></a>
 
         <div class="header-right">
             <button class="tool-trigger" id="tool-trigger">
-                <span><span class="scope">mongo.</span>bindata</span>
+                <span id="tool-trigger-text"><span class="scope">...</span></span>
                 <kbd>ctrl+k</kbd>
             </button>
 
@@ -25,7 +25,6 @@
         </div>
     </header>
 
-    <!-- Command Palette -->
     <div class="palette-overlay" id="palette">
         <div class="palette">
             <input type="text" class="palette-input" id="palette-input" placeholder="search tools...">
@@ -33,135 +32,7 @@
         </div>
     </div>
 
-    <main>
-        <div class="tool-title">MongoDB BinData / UUID Converter</div>
-
-        <div class="tool">
-            <div class="tool-tabs">
-                <button class="tool-tab active" data-panel="decode">decode</button>
-                <button class="tool-tab" data-panel="encode">encode</button>
-            </div>
-
-            <!-- Decode Panel -->
-            <div class="tool-body panel active" id="decode">
-                <div class="field">
-                    <label>input</label>
-                    <textarea id="decode-input"
-                        placeholder="BinData(3, &quot;...&quot;)&#10;Binary.createFromBase64(&quot;...&quot;, 4)&#10;raw base64"></textarea>
-                </div>
-
-                <div class="seg">
-                    <span class="seg-label">subtype</span>
-                    <label><input type="radio" name="d-sub" value="auto" checked><span>auto</span></label>
-                    <label><input type="radio" name="d-sub" value="3"><span>3 legacy</span></label>
-                    <label><input type="radio" name="d-sub" value="4"><span>4 uuid</span></label>
-                    <label><input type="radio" name="d-sub" value="0"><span>0 generic</span></label>
-                </div>
-
-                <div class="seg" id="d-enc-wrap">
-                    <span class="seg-label">legacy encoding</span>
-                    <label><input type="radio" name="d-enc" value="csharp" checked><span>c#</span></label>
-                    <label><input type="radio" name="d-enc" value="java"><span>java</span></label>
-                    <label><input type="radio" name="d-enc" value="python"><span>python</span></label>
-                </div>
-
-                <div class="actions">
-                    <button class="btn btn-primary" id="decode-btn">decode</button>
-                    <button class="btn" id="decode-clear">clear</button>
-                </div>
-
-                <div class="output-wrap">
-                    <div class="output" id="decode-output"></div>
-                    <button class="output-copy" data-target="decode-output">copy</button>
-                </div>
-                <div class="output-meta" id="decode-meta"></div>
-            </div>
-
-            <!-- Encode Panel -->
-            <div class="tool-body panel" id="encode">
-                <div class="field">
-                    <label>input</label>
-                    <textarea id="encode-input" placeholder="uuid string&#10;hex bytes&#10;plain text"></textarea>
-                </div>
-
-                <div class="seg">
-                    <span class="seg-label">subtype</span>
-                    <label><input type="radio" name="e-sub" value="4" checked><span>4 uuid</span></label>
-                    <label><input type="radio" name="e-sub" value="3"><span>3 legacy</span></label>
-                    <label><input type="radio" name="e-sub" value="0"><span>0 generic</span></label>
-                </div>
-
-                <div class="seg" id="e-enc-wrap" style="display:none">
-                    <span class="seg-label">legacy encoding</span>
-                    <label><input type="radio" name="e-enc" value="csharp" checked><span>c#</span></label>
-                    <label><input type="radio" name="e-enc" value="java"><span>java</span></label>
-                    <label><input type="radio" name="e-enc" value="python"><span>python</span></label>
-                </div>
-
-                <div class="seg">
-                    <span class="seg-label">format</span>
-                    <label><input type="radio" name="e-fmt" value="bindata" checked><span>BinData()</span></label>
-                    <label><input type="radio" name="e-fmt" value="binary"><span>Binary()</span></label>
-                    <label><input type="radio" name="e-fmt" value="base64"><span>base64</span></label>
-                </div>
-
-                <div class="actions">
-                    <button class="btn btn-primary" id="encode-btn">encode</button>
-                    <button class="btn" id="encode-clear">clear</button>
-                </div>
-
-                <div class="output-wrap">
-                    <div class="output" id="encode-output"></div>
-                    <button class="output-copy" data-target="encode-output">copy</button>
-                </div>
-            </div>
-        </div>
-
-        <details class="ref">
-            <summary>subtype reference</summary>
-            <div class="ref-body">
-                <table>
-                    <tr>
-                        <th>type</th>
-                        <th>name</th>
-                        <th>description</th>
-                    </tr>
-                    <tr>
-                        <td><code>0</code></td>
-                        <td>generic</td>
-                        <td>general purpose binary</td>
-                    </tr>
-                    <tr>
-                        <td><code>3</code></td>
-                        <td>uuid legacy</td>
-                        <td>driver-specific byte order</td>
-                    </tr>
-                    <tr>
-                        <td><code>4</code></td>
-                        <td>uuid</td>
-                        <td>rfc 4122 standard</td>
-                    </tr>
-                    <tr>
-                        <td><code>5</code></td>
-                        <td>md5</td>
-                        <td>md5 hash, 16 bytes</td>
-                    </tr>
-                    <tr>
-                        <td><code>6</code></td>
-                        <td>encrypted</td>
-                        <td>client-side encryption</td>
-                    </tr>
-                    <tr>
-                        <td><code>128+</code></td>
-                        <td>user defined</td>
-                        <td>custom subtypes</td>
-                    </tr>
-                </table>
-                <a href="https://www.mongodb.com/docs/manual/reference/bson-types/#binary-data" target="_blank"
-                    class="ref-link">→ mongodb docs</a>
-            </div>
-        </details>
-    </main>
+    <main id="tool-container"></main>
 
     <footer>
         <a href="https://github.com/isaidsari/etc-tools" target="_blank">src</a>
@@ -170,7 +41,10 @@
     <div class="toast" id="toast"></div>
 
     <script src="js/core.js"></script>
+
     <script src="js/tools/mongo-bindata.js"></script>
+    <script src="js/tools/mongo-objectid.js"></script>
+    <script src="js/tools/time-epoch.js"></script>
 </body>
 
 </html>

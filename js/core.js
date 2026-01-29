@@ -3,15 +3,97 @@
  * theme, toast notifications, command palette
  */
 
-// Tools registry - add new tools here
-const tools = [
-    { id: 'mongo.bindata', name: 'bindata', scope: 'mongo', desc: 'binary/uuid converter' },
-    { id: 'mongo.objectid', name: 'objectid', scope: 'mongo', desc: 'objectid parser', soon: true },
-    { id: 'time.epoch', name: 'epoch', scope: 'time', desc: 'timestamp converter', soon: true },
-    { id: 'text.unicode', name: 'unicode', scope: 'text', desc: 'character inspector', soon: true },
-];
+// Tools registry
+const tools = [];
+const registeredTools = {};
+let currentTool = null;
 
-let currentTool = 'mongo.bindata';
+// Register a tool
+window.registerTool = (tool) => {
+    registeredTools[tool.id] = tool;
+
+    // Add to palette list
+    const [scope, name] = tool.id.split('.');
+    tools.push({
+        id: tool.id,
+        name: name,
+        scope: scope,
+        desc: tool.title || tool.id
+    });
+};
+
+// ============================================
+// Router
+// ============================================
+
+const router = {
+    container: null,
+
+    // Navigate to a tool
+    navigate(toolId) {
+        const tool = registeredTools[toolId];
+        if (!tool) {
+            // Default to first registered tool
+            const firstToolId = Object.keys(registeredTools)[0];
+            if (firstToolId) this.navigate(firstToolId);
+            return;
+        }
+
+        // Unmount current tool
+        if (currentTool && registeredTools[currentTool]) {
+            const prev = registeredTools[currentTool];
+            if (prev.unmount) prev.unmount();
+        }
+
+        // Render new tool
+        if (!this.container) {
+            this.container = document.getElementById('tool-container');
+        }
+
+        if (this.container) {
+            this.container.innerHTML = tool.render();
+            currentTool = toolId;
+
+            // Mount tool (setup event handlers)
+            if (tool.mount) tool.mount();
+
+            // Update header
+            const toolMeta = tools.find(t => t.id === toolId);
+            if (toolMeta) {
+                const triggerText = document.getElementById('tool-trigger-text');
+                if (triggerText) {
+                    triggerText.innerHTML = `<span class="scope">${toolMeta.scope}.</span>${toolMeta.name}`;
+                }
+            }
+
+            // Update URL hash
+            if (window.location.hash !== '#' + toolId) {
+                history.replaceState(null, null, '#' + toolId);
+            }
+
+            // Re-init tabs and copy buttons for new content
+            initTabs();
+            initCopyButtons();
+        }
+    },
+
+    // Initialize router
+    init() {
+        this.container = document.getElementById('tool-container');
+
+        // Handle hash changes
+        window.addEventListener('hashchange', () => {
+            const hash = window.location.hash.slice(1);
+            if (hash) this.navigate(hash);
+        });
+
+        // Initial load (wait for tools to register)
+        setTimeout(() => {
+            const hash = window.location.hash.slice(1);
+            this.navigate(hash || Object.keys(registeredTools)[0]);
+        }, 0);
+    }
+};
 
 // ============================================
 // Theme
@@ -123,15 +205,10 @@ const palette = {
 
     select(id) {
         const tool = tools.find(t => t.id === id);
-        if (tool?.soon) {
-            toast.show('coming soon');
-            return;
-        }
-        currentTool = id;
-        document.querySelector('.tool-trigger span').innerHTML =
-            `<span class="scope">${tool.scope}.</span>${tool.name}`;
+        if (!tool) return;
+
+        router.navigate(id);
         this.close();
-        // TODO: load tool content dynamically
     },
 
     filter(query) {
@@ -232,6 +309,7 @@ function initKeyboardShortcuts() {
 
 document.addEventListener('DOMContentLoaded', () => {
     initTheme();
+    router.init();
     toast.init();
     palette.init();
     initTabs();

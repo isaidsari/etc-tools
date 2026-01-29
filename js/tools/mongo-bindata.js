@@ -16,31 +16,20 @@ const bindata = {
         python: { to: b => b, from: b => b }
     },
 
-    // Parse BinData input formats
     parse(s) {
         s = s.trim();
         let m;
-
-        // BinData(n, "...")
         if ((m = s.match(/BinData\s*\(\s*(\d+)\s*,\s*["']([^"']+)["']\s*\)/i)))
             return { sub: +m[1], b64: m[2] };
-
-        // Binary.createFromBase64("...", n)
         if ((m = s.match(/Binary\.createFromBase64\s*\(\s*["']([^"']+)["']\s*,\s*(\d+)\s*\)/i)))
             return { sub: +m[2], b64: m[1] };
-
-        // UUID("...")
         if ((m = s.match(/UUID\s*\(\s*["']([^"']+)["']\s*\)/i)))
             return { sub: 4, b64: this.toB64(this.uuidToBytes(m[1])) };
-
-        // Raw base64
         if (/^[A-Za-z0-9+/]+=*$/.test(s) && s.length >= 4)
             return { sub: null, b64: s };
-
         throw new Error('invalid format');
     },
 
-    // Conversion utilities
     toBytes: b64 => Uint8Array.from(atob(b64), c => c.charCodeAt(0)),
     toB64: bytes => btoa(String.fromCharCode(...bytes)),
     toHex: bytes => [...bytes].map(b => b.toString(16).padStart(2, '0')).join(''),
@@ -64,7 +53,6 @@ const bindata = {
 
     isUuid: s => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s),
 
-    // Decode BinData to readable format
     decode(input, sub, enc) {
         const p = this.parse(input);
         const bytes = this.toBytes(p.b64);
@@ -83,7 +71,6 @@ const bindata = {
         return { val: this.toHex(bytes), type: `subtype ${st ?? '?'}`, len: bytes.length };
     },
 
-    // Encode value to BinData format
     encode(input, sub, fmt, enc) {
         const s = input.trim();
         let bytes;
@@ -100,95 +87,201 @@ const bindata = {
         }
 
         const b64 = this.toB64(bytes);
-
         if (fmt === 'bindata') return `BinData(${sub}, "${b64}")`;
         if (fmt === 'binary') return `Binary.createFromBase64("${b64}", ${sub})`;
         return b64;
     }
 };
 
-// ============================================
-// UI Handlers
-// ============================================
+// Tool definition
+const mongoBindata = {
+    id: 'mongo.bindata',
+    title: 'MongoDB BinData / UUID Converter',
 
-document.addEventListener('DOMContentLoaded', () => {
-    const decOut = document.getElementById('decode-output');
-    const decMeta = document.getElementById('decode-meta');
-    const encOut = document.getElementById('encode-output');
+    render() {
+        return `
+            <div class="tool-title">${this.title}</div>
 
-    // Decode
-    document.getElementById('decode-btn').onclick = () => {
-        const input = document.getElementById('decode-input').value;
-        if (!input.trim()) {
+            <div class="tool">
+                <div class="tool-tabs">
+                    <button class="tool-tab active" data-panel="decode">decode</button>
+                    <button class="tool-tab" data-panel="encode">encode</button>
+                </div>
+
+                <!-- Decode Panel -->
+                <div class="tool-body panel active" id="decode">
+                    <div class="field">
+                        <label>input</label>
+                        <textarea id="decode-input" placeholder="BinData(3, &quot;...&quot;)&#10;Binary.createFromBase64(&quot;...&quot;, 4)&#10;raw base64"></textarea>
+                    </div>
+
+                    <div class="seg">
+                        <span class="seg-label">subtype</span>
+                        <label><input type="radio" name="d-sub" value="auto" checked><span>auto</span></label>
+                        <label><input type="radio" name="d-sub" value="3"><span>3 legacy</span></label>
+                        <label><input type="radio" name="d-sub" value="4"><span>4 uuid</span></label>
+                        <label><input type="radio" name="d-sub" value="0"><span>0 generic</span></label>
+                    </div>
+
+                    <div class="seg" id="d-enc-wrap">
+                        <span class="seg-label">legacy encoding</span>
+                        <label><input type="radio" name="d-enc" value="csharp" checked><span>c#</span></label>
+                        <label><input type="radio" name="d-enc" value="java"><span>java</span></label>
+                        <label><input type="radio" name="d-enc" value="python"><span>python</span></label>
+                    </div>
+
+                    <div class="actions">
+                        <button class="btn btn-primary" id="decode-btn">decode</button>
+                        <button class="btn" id="decode-clear">clear</button>
+                    </div>
+
+                    <div class="output-wrap">
+                        <div class="output" id="decode-output"></div>
+                        <button class="output-copy" data-target="decode-output">copy</button>
+                    </div>
+                    <div class="output-meta" id="decode-meta"></div>
+                </div>
+
+                <!-- Encode Panel -->
+                <div class="tool-body panel" id="encode">
+                    <div class="field">
+                        <label>input</label>
+                        <textarea id="encode-input" placeholder="uuid string&#10;hex bytes&#10;plain text"></textarea>
+                    </div>
+
+                    <div class="seg">
+                        <span class="seg-label">subtype</span>
+                        <label><input type="radio" name="e-sub" value="4" checked><span>4 uuid</span></label>
+                        <label><input type="radio" name="e-sub" value="3"><span>3 legacy</span></label>
+                        <label><input type="radio" name="e-sub" value="0"><span>0 generic</span></label>
+                    </div>
+
+                    <div class="seg" id="e-enc-wrap" style="display:none">
+                        <span class="seg-label">legacy encoding</span>
+                        <label><input type="radio" name="e-enc" value="csharp" checked><span>c#</span></label>
+                        <label><input type="radio" name="e-enc" value="java"><span>java</span></label>
+                        <label><input type="radio" name="e-enc" value="python"><span>python</span></label>
+                    </div>
+
+                    <div class="seg">
+                        <span class="seg-label">format</span>
+                        <label><input type="radio" name="e-fmt" value="bindata" checked><span>BinData()</span></label>
+                        <label><input type="radio" name="e-fmt" value="binary"><span>Binary()</span></label>
+                        <label><input type="radio" name="e-fmt" value="base64"><span>base64</span></label>
+                    </div>
+
+                    <div class="actions">
+                        <button class="btn btn-primary" id="encode-btn">encode</button>
+                        <button class="btn" id="encode-clear">clear</button>
+                    </div>
+
+                    <div class="output-wrap">
+                        <div class="output" id="encode-output"></div>
+                        <button class="output-copy" data-target="encode-output">copy</button>
+                    </div>
+                </div>
+            </div>
+
+            <details class="ref">
+                <summary>subtype reference</summary>
+                <div class="ref-body">
+                    <table>
+                        <tr><th>type</th><th>name</th><th>description</th></tr>
+                        <tr><td><code>0</code></td><td>generic</td><td>general purpose binary</td></tr>
+                        <tr><td><code>3</code></td><td>uuid legacy</td><td>driver-specific byte order</td></tr>
+                        <tr><td><code>4</code></td><td>uuid</td><td>rfc 4122 standard</td></tr>
+                        <tr><td><code>5</code></td><td>md5</td><td>md5 hash, 16 bytes</td></tr>
+                        <tr><td><code>6</code></td><td>encrypted</td><td>client-side encryption</td></tr>
+                        <tr><td><code>128+</code></td><td>user defined</td><td>custom subtypes</td></tr>
+                    </table>
+                    <a href="https://www.mongodb.com/docs/manual/reference/bson-types/#binary-data" target="_blank" class="ref-link">→ mongodb docs</a>
+                </div>
+            </details>
+        `;
+    },
+
+    mount() {
+        const decOut = document.getElementById('decode-output');
+        const decMeta = document.getElementById('decode-meta');
+        const encOut = document.getElementById('encode-output');
+
+        // Decode
+        document.getElementById('decode-btn').onclick = () => {
+            const input = document.getElementById('decode-input').value;
+            if (!input.trim()) {
+                decOut.textContent = '';
+                decMeta.textContent = '';
+                return;
+            }
+
+            try {
+                const r = bindata.decode(input, radio('d-sub'), radio('d-enc'));
+                decOut.textContent = r.val;
+                decMeta.textContent = `${r.type} · ${r.len} bytes`;
+            } catch (e) {
+                decOut.textContent = '';
+                decMeta.textContent = e.message;
+            }
+        };
+
+        // Encode
+        document.getElementById('encode-btn').onclick = () => {
+            const input = document.getElementById('encode-input').value;
+            if (!input.trim()) {
+                encOut.textContent = '';
+                return;
+            }
+
+            try {
+                encOut.textContent = bindata.encode(input, radio('e-sub'), radio('e-fmt'), radio('e-enc'));
+            } catch (e) {
+                encOut.textContent = '';
+                toast.show(e.message);
+            }
+        };
+
+        // Clear buttons
+        document.getElementById('decode-clear').onclick = () => {
+            document.getElementById('decode-input').value = '';
             decOut.textContent = '';
             decMeta.textContent = '';
-            return;
-        }
-
-        try {
-            const r = bindata.decode(input, radio('d-sub'), radio('d-enc'));
-            decOut.textContent = r.val;
-            decMeta.textContent = `${r.type} · ${r.len} bytes`;
-        } catch (e) {
-            decOut.textContent = '';
-            decMeta.textContent = e.message;
-        }
-    };
-
-    // Encode
-    document.getElementById('encode-btn').onclick = () => {
-        const input = document.getElementById('encode-input').value;
-        if (!input.trim()) {
-            encOut.textContent = '';
-            return;
-        }
-
-        try {
-            encOut.textContent = bindata.encode(input, radio('e-sub'), radio('e-fmt'), radio('e-enc'));
-        } catch (e) {
-            encOut.textContent = '';
-            toast.show(e.message);
-        }
-    };
-
-    // Clear buttons
-    document.getElementById('decode-clear').onclick = () => {
-        document.getElementById('decode-input').value = '';
-        decOut.textContent = '';
-        decMeta.textContent = '';
-    };
-
-    document.getElementById('encode-clear').onclick = () => {
-        document.getElementById('encode-input').value = '';
-        encOut.textContent = '';
-    };
-
-    // Show/hide encoding options based on subtype
-    document.querySelectorAll('input[name="d-sub"]').forEach(r => {
-        r.onchange = () => {
-            const v = radio('d-sub');
-            document.getElementById('d-enc-wrap').style.display = (v === '3' || v === 'auto') ? '' : 'none';
         };
-    });
 
-    document.querySelectorAll('input[name="e-sub"]').forEach(r => {
-        r.onchange = () => {
-            document.getElementById('e-enc-wrap').style.display = radio('e-sub') === '3' ? '' : 'none';
+        document.getElementById('encode-clear').onclick = () => {
+            document.getElementById('encode-input').value = '';
+            encOut.textContent = '';
         };
-    });
 
-    // Keyboard shortcuts
-    document.getElementById('decode-input').onkeydown = (e) => {
-        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-            e.preventDefault();
-            document.getElementById('decode-btn').click();
-        }
-    };
+        // Show/hide encoding options based on subtype
+        document.querySelectorAll('input[name="d-sub"]').forEach(r => {
+            r.onchange = () => {
+                const v = radio('d-sub');
+                document.getElementById('d-enc-wrap').style.display = (v === '3' || v === 'auto') ? '' : 'none';
+            };
+        });
 
-    document.getElementById('encode-input').onkeydown = (e) => {
-        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-            e.preventDefault();
-            document.getElementById('encode-btn').click();
-        }
-    };
-});
+        document.querySelectorAll('input[name="e-sub"]').forEach(r => {
+            r.onchange = () => {
+                document.getElementById('e-enc-wrap').style.display = radio('e-sub') === '3' ? '' : 'none';
+            };
+        });
+
+        // Keyboard shortcuts
+        document.getElementById('decode-input').onkeydown = (e) => {
+            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                e.preventDefault();
+                document.getElementById('decode-btn').click();
+            }
+        };
+
+        document.getElementById('encode-input').onkeydown = (e) => {
+            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                e.preventDefault();
+                document.getElementById('encode-btn').click();
+            }
+        };
+    }
+};
+
+// Register tool
+window.registerTool(mongoBindata);
