@@ -5,7 +5,6 @@ minimal developer utilities.
 ## tools
 
 - **mongo.bindata** - mongodb binary/uuid converter with legacy encoding support
-- 
 
 ## usage
 
