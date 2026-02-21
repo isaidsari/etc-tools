@@ -101,6 +101,7 @@ const mongoBindata = {
     render() {
         return `
             <div class="tool-title">${this.title}</div>
+            <div class="tool-desc">convert between bindata, uuid, hex and base64 formats</div>
 
             <div class="tool">
                 <div class="tool-tabs">

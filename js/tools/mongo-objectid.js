@@ -64,6 +64,7 @@ const mongoObjectId = {
     render() {
         return `
             <div class="tool-title">${this.title}</div>
+            <div class="tool-desc">extract timestamp and structure from objectids, or generate new ones</div>
 
             <div class="tool">
                 <div class="tool-tabs">

@@ -4,16 +4,18 @@
 
 const structParser = {
     types: {
-        'int8_t': { size: 1, get: (v, o, le) => v.getInt8(o) },
-        'uint8_t': { size: 1, get: (v, o, le) => v.getUint8(o) },
-        'int16_t': { size: 2, get: (v, o, le) => v.getInt16(o, le) },
+        'int8_t':   { size: 1, get: (v, o) => v.getInt8(o) },
+        'uint8_t':  { size: 1, get: (v, o) => v.getUint8(o) },
+        'int16_t':  { size: 2, get: (v, o, le) => v.getInt16(o, le) },
         'uint16_t': { size: 2, get: (v, o, le) => v.getUint16(o, le) },
-        'int32_t': { size: 4, get: (v, o, le) => v.getInt32(o, le) },
+        'int32_t':  { size: 4, get: (v, o, le) => v.getInt32(o, le) },
         'uint32_t': { size: 4, get: (v, o, le) => v.getUint32(o, le) },
-        'int64_t': { size: 8, get: (v, o, le) => v.getBigInt64(o, le).toString() },
+        'int64_t':  { size: 8, get: (v, o, le) => v.getBigInt64(o, le).toString() },
         'uint64_t': { size: 8, get: (v, o, le) => v.getBigUint64(o, le).toString() },
-        'float': { size: 4, get: (v, o, le) => Number(v.getFloat32(o, le).toFixed(4)) },
-        'double': { size: 8, get: (v, o, le) => v.getFloat64(o, le) }
+        'float':    { size: 4, get: (v, o, le) => Number(v.getFloat32(o, le).toFixed(6)) },
+        'double':   { size: 8, get: (v, o, le) => v.getFloat64(o, le) },
+        'bool':     { size: 1, get: (v, o) => v.getUint8(o) !== 0 ? 'true' : 'false' },
+        'char':     { size: 1, get: (v, o) => v.getUint8(o), isChar: true },
     },
 
     parseStructDef(def) {
@@ -23,7 +25,6 @@ const structParser = {
             line = line.trim();
             if (!line || line.startsWith('//') || line.startsWith('struct') || line === '{' || line === '}' || line === '};') continue;
 
-            // ex: uint16_t temperature; veya uint8_t mac[6];
             const match = line.match(/^([a-z0-9_]+)\s+([a-z0-9_]+)(?:\[(\d+)\])?\s*;?$/i);
             if (match) {
                 const type = match[1];
@@ -39,7 +40,7 @@ const structParser = {
 
     parse(hexString, structDef, littleEndian = true) {
         const cleanHex = hexString.replace(/\s+/g, '').replace(/0x/g, '');
-        if (cleanHex.length % 2 !== 0) throw new Error("Invalid hex length. Must be even.");
+        if (cleanHex.length % 2 !== 0) throw new Error('Invalid hex length. Must be even.');
 
         const bytes = new Uint8Array(cleanHex.match(/.{1,2}/g)?.map(byte => parseInt(byte, 16)) || []);
         const view = new DataView(bytes.buffer);
@@ -55,15 +56,26 @@ const structParser = {
             const totalSize = itemSize * count;
 
             if (offset + totalSize > view.byteLength) {
-                results.push({ name: field.name, error: "EOF", start: offset, length: view.byteLength - offset });
+                results.push({ name: field.name, error: 'EOF', start: offset, length: view.byteLength - offset });
                 break;
             }
 
             let val;
             if (field.arrayLen) {
-                val = [];
-                for (let i = 0; i < count; i++) {
-                    val.push(typeInfo.get(view, offset + (i * itemSize), littleEndian));
+                if (typeInfo.isChar) {
+                    // char[] → string (stop at null terminator)
+                    const chars = [];
+                    for (let i = 0; i < count; i++) {
+                        const c = view.getUint8(offset + i);
+                        if (c === 0) break;
+                        chars.push(String.fromCharCode(c));
+                    }
+                    val = chars.join('');
+                } else {
+                    val = [];
+                    for (let i = 0; i < count; i++) {
+                        val.push(typeInfo.get(view, offset + (i * itemSize), littleEndian));
+                    }
                 }
             } else {
                 val = typeInfo.get(view, offset, littleEndian);
@@ -92,19 +104,20 @@ const dataStruct = {
     render() {
         return `
             <div class="tool-title">${this.title}</div>
+            <div class="tool-desc">parse raw hex data against c-struct definitions</div>
 
             <div class="tool">
                 <div class="tool-body panel active" id="parser">
-                    
+
                     <div style="display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 16px;">
                         <div class="field" style="flex: 1; min-width: 250px;">
                             <label>raw hex data</label>
                             <textarea id="hex-input" placeholder="04 30 00 ..." style="font-family: var(--font); height: 180px;"></textarea>
                         </div>
-                        
+
                         <div class="field" style="flex: 1; min-width: 250px;">
                             <label>c-struct definition</label>
-                            <textarea id="struct-input" placeholder="struct Payload {&#10;    uint8_t header;&#10;    uint16_t value;&#10;};" style="font-family: var(--font); height: 180px;"></textarea>
+                            <textarea id="struct-input" placeholder="struct Payload {&#10;    uint8_t header;&#10;    uint16_t value;&#10;    char name[8];&#10;};" style="font-family: var(--font); height: 180px;"></textarea>
                         </div>
                     </div>
 
@@ -120,6 +133,7 @@ const dataStruct = {
                     </div>
 
                     <div id="interactive-output" style="display: none; border: 1px solid var(--border); background: color-mix(in srgb, var(--fg) 3%, var(--bg));">
+                        <div id="struct-summary" style="display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; border-bottom: 1px solid var(--border); font-size: 11px; color: var(--fg3);"></div>
                         <div style="display: flex; flex-wrap: wrap;">
                             <div id="hex-view" style="flex: 1; padding: 16px; font-family: var(--font); font-size: 13px; line-height: 1.8; border-right: 1px solid var(--border); min-width: 200px;"></div>
                             <div id="struct-view" style="flex: 1; padding: 16px; font-family: var(--font); font-size: 13px; min-width: 250px;"></div>
@@ -139,9 +153,12 @@ const dataStruct = {
                         <tr><td><code>uint64_t / int64_t</code></td><td>8</td><td>64-bit integer</td></tr>
                         <tr><td><code>float</code></td><td>4</td><td>32-bit floating point</td></tr>
                         <tr><td><code>double</code></td><td>8</td><td>64-bit floating point</td></tr>
+                        <tr><td><code>bool</code></td><td>1</td><td>true / false</td></tr>
+                        <tr><td><code>char / char[n]</code></td><td>1 each</td><td>character or null-terminated string</td></tr>
                     </table>
                     <p style="margin-top: 12px; font-size: 12px; color: var(--fg2);">
                         <strong>Arrays:</strong> Fixed-size arrays are supported (e.g., <code>uint8_t mac[6];</code>).<br>
+                        <strong>Strings:</strong> <code>char name[16];</code> reads as ASCII, stops at null byte.<br>
                         <strong>Comments:</strong> Use <code>//</code> for comments. <code>struct { ... }</code> wrappers are auto-ignored.
                     </p>
                 </div>
@@ -152,18 +169,21 @@ const dataStruct = {
                 .hex-byte.active { background: var(--fg); color: var(--bg); font-weight: bold; }
                 .struct-row { padding: 4px 8px; border-radius: 4px; cursor: default; display: flex; justify-content: space-between; margin-bottom: 2px; }
                 .struct-row:hover { background: color-mix(in srgb, var(--fg) 8%, var(--bg)); }
-                .s-type { color: var(--fg3); font-size: 11px; margin-right: 8px; width: 80px; display: inline-block; }
+                .s-type { color: var(--fg3); font-size: 11px; margin-right: 8px; width: 90px; display: inline-block; }
                 .s-name { color: var(--fg); font-weight: 500; }
-                .s-val { color: var(--fg2); }
+                .s-val { color: var(--fg2); max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+                .s-string { color: var(--fg2); font-style: italic; }
             </style>
         `;
     },
+
     mount() {
         const interactiveBox = document.getElementById('interactive-output');
         const hexView = document.getElementById('hex-view');
         const structView = document.getElementById('struct-view');
+        const summary = document.getElementById('struct-summary');
 
-        document.getElementById('parse-btn').onclick = () => {
+        const runAnalyze = () => {
             const hex = document.getElementById('hex-input').value;
             const struct = document.getElementById('struct-input').value;
             const isLE = radio('p-endian') === 'le';
@@ -173,7 +193,26 @@ const dataStruct = {
             try {
                 const parsed = structParser.parse(hex, struct, isLE);
 
-                // Hex View
+                // Summary bar
+                const used = parsed.processedLength;
+                const total = parsed.bytes.length;
+                const remaining = total - used;
+                const jsonObj = {};
+                parsed.results.forEach(r => { if (!r.error) jsonObj[r.name] = r.value; });
+
+                summary.innerHTML = `
+                    <span>${used} of ${total} bytes consumed${remaining > 0 ? ` · ${remaining} remaining` : ''}</span>
+                    <button class="btn" id="copy-json-btn" style="padding: 2px 8px; font-size: 11px">copy as JSON</button>
+                `;
+
+                document.getElementById('copy-json-btn').onclick = async () => {
+                    try {
+                        await navigator.clipboard.writeText(JSON.stringify(jsonObj, null, 2));
+                        toast.show('copied');
+                    } catch { toast.show('failed'); }
+                };
+
+                // Hex view
                 let hexHtml = '';
                 parsed.bytes.forEach((b, i) => {
                     const hexStr = b.toString(16).padStart(2, '0').toUpperCase();
@@ -181,11 +220,23 @@ const dataStruct = {
                 });
                 hexView.innerHTML = hexHtml;
 
-                // Struct View
+                // Struct view
                 let structHtml = '';
-                parsed.results.forEach((r, idx) => {
-                    const valStr = Array.isArray(r.value) ? `[${r.value.join(', ')}]` : r.value;
-                    const errStr = r.error ? `<span style="color:red">ERR: ${r.error}</span>` : valStr;
+                parsed.results.forEach(r => {
+                    let displayVal;
+                    if (r.error) {
+                        displayVal = `<span style="color:var(--fg3)">ERR: ${r.error}</span>`;
+                    } else if (typeof r.value === 'string' && (r.type.startsWith('char') || r.type === 'bool')) {
+                        // char[] string or bool
+                        const isStr = r.type.startsWith('char[');
+                        displayVal = isStr
+                            ? `<span class="s-string">"${r.value}"</span>`
+                            : `<span class="s-val">${r.value}</span>`;
+                    } else if (Array.isArray(r.value)) {
+                        displayVal = `<span class="s-val">[${r.value.join(', ')}]</span>`;
+                    } else {
+                        displayVal = `<span class="s-val">${r.value}</span>`;
+                    }
 
                     structHtml += `
                         <div class="struct-row" data-start="${r.start}" data-len="${r.length}">
@@ -193,25 +244,24 @@ const dataStruct = {
                                 <span class="s-type">${r.type}</span>
                                 <span class="s-name">${r.name}</span>
                             </div>
-                            <span class="s-val">${errStr}</span>
+                            ${displayVal}
                         </div>
                     `;
                 });
                 structView.innerHTML = structHtml;
                 interactiveBox.style.display = 'block';
 
-                // Hover (Highlight)
+                // Hover highlight
                 document.querySelectorAll('.struct-row').forEach(row => {
                     row.onmouseenter = () => {
                         const start = parseInt(row.dataset.start);
                         const len = parseInt(row.dataset.len);
                         for (let i = start; i < start + len; i++) {
-                            const byteEl = hexView.querySelector(`[data-idx="${i}"]`);
-                            if (byteEl) byteEl.classList.add('active');
+                            hexView.querySelector(`[data-idx="${i}"]`)?.classList.add('active');
                         }
                     };
                     row.onmouseleave = () => {
-                        document.querySelectorAll('.hex-byte').forEach(el => el.classList.remove('active'));
+                        hexView.querySelectorAll('.hex-byte').forEach(el => el.classList.remove('active'));
                     };
                 });
 
@@ -220,11 +270,23 @@ const dataStruct = {
             }
         };
 
+        document.getElementById('parse-btn').onclick = runAnalyze;
+
         document.getElementById('parse-clear').onclick = () => {
             document.getElementById('hex-input').value = '';
             document.getElementById('struct-input').value = '';
             interactiveBox.style.display = 'none';
         };
+
+        // Ctrl+Enter to analyze
+        ['hex-input', 'struct-input'].forEach(id => {
+            document.getElementById(id).onkeydown = (e) => {
+                if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                    e.preventDefault();
+                    runAnalyze();
+                }
+            };
+        });
     }
 };
 

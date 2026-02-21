@@ -2,6 +2,26 @@
  * time.epoch - Timestamp converter & formatter
  */
 
+const TZ_OPTIONS = [
+    { label: 'browser local', value: '' },
+    { label: 'UTC', value: 'UTC' },
+    { label: 'America/New_York', value: 'America/New_York' },
+    { label: 'America/Chicago', value: 'America/Chicago' },
+    { label: 'America/Los_Angeles', value: 'America/Los_Angeles' },
+    { label: 'America/Sao_Paulo', value: 'America/Sao_Paulo' },
+    { label: 'Europe/London', value: 'Europe/London' },
+    { label: 'Europe/Paris', value: 'Europe/Paris' },
+    { label: 'Europe/Istanbul', value: 'Europe/Istanbul' },
+    { label: 'Africa/Cairo', value: 'Africa/Cairo' },
+    { label: 'Asia/Dubai', value: 'Asia/Dubai' },
+    { label: 'Asia/Kolkata', value: 'Asia/Kolkata' },
+    { label: 'Asia/Bangkok', value: 'Asia/Bangkok' },
+    { label: 'Asia/Singapore', value: 'Asia/Singapore' },
+    { label: 'Asia/Tokyo', value: 'Asia/Tokyo' },
+    { label: 'Asia/Seoul', value: 'Asia/Seoul' },
+    { label: 'Australia/Sydney', value: 'Australia/Sydney' },
+];
+
 const epoch = {
     parse(input) {
         const s = input.trim();
@@ -35,7 +55,7 @@ const epoch = {
             return { unix: Math.floor(d.getTime() / 1000), ms: d.getTime(), type: 'sql datetime' };
         }
 
-        // RFC 2822 (Tue, 30 Jan 2024 15:00:00 GMT)
+        // RFC 2822
         if (/^\w{3},\s+\d{1,2}\s+\w{3}\s+\d{4}/.test(s)) {
             const d = new Date(s);
             if (isNaN(d.getTime())) throw new Error('invalid rfc 2822');
@@ -67,32 +87,35 @@ const epoch = {
         throw new Error('unrecognized format');
     },
 
-    format(ms) {
+    format(ms, tz) {
         const unix = Math.floor(ms / 1000);
         const d = new Date(ms);
+        const timeZone = tz || Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-        // SQL datetime format
         const pad = n => n.toString().padStart(2, '0');
         const sqlDateTime = `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())} ` +
             `${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}`;
+
+        const local = d.toLocaleString('en-US', {
+            timeZone,
+            year: 'numeric', month: '2-digit', day: '2-digit',
+            hour: '2-digit', minute: '2-digit', second: '2-digit',
+            hour12: false
+        });
+
+        const tzName = new Intl.DateTimeFormat('en-US', { timeZone, timeZoneName: 'short' })
+            .formatToParts(d)
+            .find(p => p.type === 'timeZoneName')?.value || timeZone;
 
         return {
             iso: d.toISOString(),
             rfc2822: d.toUTCString(),
             sql: sqlDateTime,
-            unix: unix,
-            ms: ms,
+            unix,
+            ms,
             excel: Math.floor((ms - new Date(1899, 11, 30).getTime()) / 86400000),
-            local: d.toLocaleString('en-US', {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-                hour12: false
-            }),
-            offset: -d.getTimezoneOffset() / 60,
+            local,
+            tzName,
             relative: this.relative(unix)
         };
     },
@@ -111,7 +134,6 @@ const epoch = {
         return `${Math.floor(absDiff / 31536000)}y ${future ? 'from now' : 'ago'}`;
     },
 
-    // Preset timestamp generators
     presets: {
         now: () => Date.now(),
         yesterday: () => Date.now() - 86400000,
@@ -125,15 +147,131 @@ const epoch = {
 const timeEpoch = {
     id: 'time.epoch',
     title: 'Timestamp Converter & Formatter',
+    _liveInterval: null,
+
+    _getSelectedTz() {
+        return document.getElementById('tz-select')?.value || null;
+    },
+
+    _renderParseOutput(parsed, fmt, container) {
+        container.innerHTML = `
+            <div style="margin-bottom: 12px">
+                <div style="color: var(--fg3); font-size: 11px; margin-bottom: 4px">INPUT TYPE</div>
+                <div style="color: var(--fg2); font-size: 12px">${parsed.type}</div>
+            </div>
+            <div style="margin-bottom: 12px">
+                <div style="color: var(--fg3); font-size: 11px; margin-bottom: 4px">ISO 8601</div>
+                <div>${fmt.iso}</div>
+            </div>
+            <div style="margin-bottom: 12px">
+                <div style="color: var(--fg3); font-size: 11px; margin-bottom: 4px">RFC 2822</div>
+                <div>${fmt.rfc2822}</div>
+            </div>
+            <div style="margin-bottom: 12px">
+                <div style="color: var(--fg3); font-size: 11px; margin-bottom: 4px">SQL DATETIME</div>
+                <div>${fmt.sql}</div>
+            </div>
+            <div style="margin-bottom: 12px">
+                <div style="color: var(--fg3); font-size: 11px; margin-bottom: 4px">LOCAL TIME (${fmt.tzName})</div>
+                <div>${fmt.local}</div>
+            </div>
+            <div style="margin-bottom: 12px">
+                <div style="color: var(--fg3); font-size: 11px; margin-bottom: 4px">UNIX TIMESTAMP</div>
+                <div>${fmt.unix} <span style="color: var(--fg3)">seconds</span></div>
+                <div style="color: var(--fg2); font-size: 12px">${fmt.ms} <span style="color: var(--fg3)">milliseconds</span></div>
+            </div>
+            <div style="margin-bottom: 12px">
+                <div style="color: var(--fg3); font-size: 11px; margin-bottom: 4px">EXCEL SERIAL DATE</div>
+                <div>${fmt.excel}</div>
+            </div>
+            <div>
+                <div style="color: var(--fg3); font-size: 11px; margin-bottom: 4px">RELATIVE</div>
+                <div>${fmt.relative}</div>
+            </div>
+        `;
+    },
+
+    _renderGenOutput(ms, container) {
+        const tz = this._getSelectedTz();
+        const fmt = epoch.format(ms, tz);
+        const rows = [
+            { label: 'UNIX (SECONDS)', val: String(fmt.unix) },
+            { label: 'MILLISECONDS', val: String(fmt.ms) },
+            { label: 'ISO 8601', val: fmt.iso },
+            { label: 'RFC 2822', val: fmt.rfc2822 },
+            { label: 'SQL DATETIME', val: fmt.sql },
+            { label: `LOCAL (${fmt.tzName})`, val: fmt.local },
+        ];
+
+        container.innerHTML = rows.map((r, i) => `
+            <div style="margin-bottom: 12px">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px">
+                    <div style="color: var(--fg3); font-size: 11px">${r.label}</div>
+                    <button class="output-copy gen-copy" data-idx="${i}" style="position: static; padding: 2px 8px">copy</button>
+                </div>
+                <div>${r.val}</div>
+            </div>
+        `).join('') + `
+            <div>
+                <div style="color: var(--fg3); font-size: 11px; margin-bottom: 4px">RELATIVE</div>
+                <div style="color: var(--fg2); font-size: 12px">${fmt.relative}</div>
+            </div>
+        `;
+
+        container.querySelectorAll('.gen-copy').forEach(btn => {
+            const val = rows[parseInt(btn.dataset.idx)].val;
+            btn.onclick = async (e) => {
+                e.stopPropagation();
+                try {
+                    await navigator.clipboard.writeText(val);
+                    toast.show('copied');
+                } catch { toast.show('failed'); }
+            };
+        });
+    },
+
+    _startLive(container) {
+        this._stopLive();
+        const liveBtn = document.getElementById('live-btn');
+        if (liveBtn) {
+            liveBtn.textContent = 'stop';
+            liveBtn.classList.add('btn-primary');
+        }
+        const update = () => this._renderGenOutput(Date.now(), container);
+        update();
+        this._liveInterval = setInterval(update, 1000);
+    },
+
+    _stopLive() {
+        if (this._liveInterval) {
+            clearInterval(this._liveInterval);
+            this._liveInterval = null;
+        }
+        const liveBtn = document.getElementById('live-btn');
+        if (liveBtn) {
+            liveBtn.textContent = 'live';
+            liveBtn.classList.remove('btn-primary');
+        }
+    },
+
+    unmount() {
+        this._stopLive();
+    },
 
     render() {
+        const tzOptions = TZ_OPTIONS.map(t =>
+            `<option value="${t.value}">${t.label}</option>`
+        ).join('');
+
         return `
             <div class="tool-title">${this.title}</div>
+            <div class="tool-desc">parse and convert timestamps between formats</div>
 
             <div class="tool">
                 <div class="tool-tabs">
                     <button class="tool-tab active" data-panel="parse-timestamp">parse</button>
                     <button class="tool-tab" data-panel="generate-timestamp">generate</button>
+                    <select id="tz-select" class="tz-select">${tzOptions}</select>
                 </div>
 
                 <!-- Parse Panel -->
@@ -163,10 +301,11 @@ const timeEpoch = {
 
                     <div class="seg">
                         <span class="seg-label">presets</span>
-                        <label><button class="btn" data-preset="now">now</button></label>
-                        <label><button class="btn" data-preset="yesterday">yesterday</button></label>
-                        <label><button class="btn" data-preset="lastWeek">last week</button></label>
-                        <label><button class="btn" data-preset="tomorrow">tomorrow</button></label>
+                        <button class="btn" data-preset="now">now</button>
+                        <button class="btn" data-preset="yesterday">yesterday</button>
+                        <button class="btn" data-preset="lastWeek">last week</button>
+                        <button class="btn" data-preset="tomorrow">tomorrow</button>
+                        <button class="btn" id="live-btn">live</button>
                     </div>
 
                     <div class="actions">
@@ -207,181 +346,80 @@ const timeEpoch = {
     mount() {
         const parseOut = document.getElementById('parse-timestamp-output');
         const genOut = document.getElementById('generate-timestamp-output');
+        let lastParsed = null;
 
         // Parse timestamp
-        document.getElementById('parse-timestamp-btn').onclick = () => {
+        const runParse = () => {
             const input = document.getElementById('parse-timestamp-input').value.trim();
-            if (!input) {
-                parseOut.innerHTML = '';
-                return;
-            }
-
+            if (!input) { parseOut.innerHTML = ''; lastParsed = null; return; }
             try {
-                const parsed = epoch.parse(input);
-                const fmt = epoch.format(parsed.ms);
-
-                parseOut.innerHTML = `
-                    <div style="margin-bottom: 12px">
-                        <div style="color: var(--fg3); font-size: 11px; margin-bottom: 4px">INPUT TYPE</div>
-                        <div style="color: var(--fg2); font-size: 12px">${parsed.type}</div>
-                    </div>
-                    <div style="margin-bottom: 12px">
-                        <div style="color: var(--fg3); font-size: 11px; margin-bottom: 4px">ISO 8601</div>
-                        <div>${fmt.iso}</div>
-                    </div>
-                    <div style="margin-bottom: 12px">
-                        <div style="color: var(--fg3); font-size: 11px; margin-bottom: 4px">RFC 2822</div>
-                        <div>${fmt.rfc2822}</div>
-                    </div>
-                    <div style="margin-bottom: 12px">
-                        <div style="color: var(--fg3); font-size: 11px; margin-bottom: 4px">SQL DATETIME</div>
-                        <div>${fmt.sql}</div>
-                    </div>
-                    <div style="margin-bottom: 12px">
-                        <div style="color: var(--fg3); font-size: 11px; margin-bottom: 4px">LOCAL TIME</div>
-                        <div>${fmt.local}</div>
-                        <div style="color: var(--fg3); font-size: 11px; margin-top: 4px">UTC${fmt.offset >= 0 ? '+' : ''}${fmt.offset}</div>
-                    </div>
-                    <div style="margin-bottom: 12px">
-                        <div style="color: var(--fg3); font-size: 11px; margin-bottom: 4px">UNIX TIMESTAMP</div>
-                        <div>${fmt.unix} <span style="color: var(--fg3)">seconds</span></div>
-                        <div style="color: var(--fg2); font-size: 12px">${fmt.ms} <span style="color: var(--fg3)">milliseconds</span></div>
-                    </div>
-                    <div style="margin-bottom: 12px">
-                        <div style="color: var(--fg3); font-size: 11px; margin-bottom: 4px">EXCEL SERIAL DATE</div>
-                        <div>${fmt.excel}</div>
-                    </div>
-                    <div>
-                        <div style="color: var(--fg3); font-size: 11px; margin-bottom: 4px">RELATIVE</div>
-                        <div>${fmt.relative}</div>
-                    </div>
-                `;
+                lastParsed = epoch.parse(input);
+                const fmt = epoch.format(lastParsed.ms, this._getSelectedTz());
+                this._renderParseOutput(lastParsed, fmt, parseOut);
             } catch (e) {
+                lastParsed = null;
                 parseOut.innerHTML = `<div style="color: var(--fg3)">${e.message}</div>`;
+            }
+        };
+
+        document.getElementById('parse-timestamp-btn').onclick = runParse;
+
+        // Timezone change → re-render parse output if data exists
+        document.getElementById('tz-select').onchange = () => {
+            if (lastParsed) {
+                const fmt = epoch.format(lastParsed.ms, this._getSelectedTz());
+                this._renderParseOutput(lastParsed, fmt, parseOut);
             }
         };
 
         // Generate timestamp
         document.getElementById('generate-timestamp-btn').onclick = () => {
+            this._stopLive();
             const input = document.getElementById('generate-timestamp-input').value.trim();
             let ms;
-
             if (input) {
                 try {
                     const d = new Date(input);
                     if (isNaN(d.getTime())) throw new Error('invalid date');
                     ms = d.getTime();
-                } catch (e) {
+                } catch {
                     genOut.innerHTML = `<div style="color: var(--fg3)">invalid date format</div>`;
                     return;
                 }
             } else {
                 ms = Date.now();
             }
-
-            const fmt = epoch.format(ms);
-
-            genOut.innerHTML = `
-                <div style="margin-bottom: 12px">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px">
-                        <div style="color: var(--fg3); font-size: 11px">UNIX (SECONDS)</div>
-                        <button class="output-copy" onclick="navigator.clipboard.writeText('${fmt.unix}'); toast.show('copied')" style="position: static; padding: 2px 8px">copy</button>
-                    </div>
-                    <div>${fmt.unix}</div>
-                </div>
-                <div style="margin-bottom: 12px">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px">
-                        <div style="color: var(--fg3); font-size: 11px">MILLISECONDS</div>
-                        <button class="output-copy" onclick="navigator.clipboard.writeText('${fmt.ms}'); toast.show('copied')" style="position: static; padding: 2px 8px">copy</button>
-                    </div>
-                    <div>${fmt.ms}</div>
-                </div>
-                <div style="margin-bottom: 12px">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px">
-                        <div style="color: var(--fg3); font-size: 11px">ISO 8601</div>
-                        <button class="output-copy" onclick="navigator.clipboard.writeText('${fmt.iso}'); toast.show('copied')" style="position: static; padding: 2px 8px">copy</button>
-                    </div>
-                    <div>${fmt.iso}</div>
-                </div>
-                <div style="margin-bottom: 12px">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px">
-                        <div style="color: var(--fg3); font-size: 11px">RFC 2822</div>
-                        <button class="output-copy" onclick="navigator.clipboard.writeText('${fmt.rfc2822}'); toast.show('copied')" style="position: static; padding: 2px 8px">copy</button>
-                    </div>
-                    <div>${fmt.rfc2822}</div>
-                </div>
-                <div style="margin-bottom: 12px">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px">
-                        <div style="color: var(--fg3); font-size: 11px">SQL DATETIME</div>
-                        <button class="output-copy" onclick="navigator.clipboard.writeText('${fmt.sql}'); toast.show('copied')" style="position: static; padding: 2px 8px">copy</button>
-                    </div>
-                    <div>${fmt.sql}</div>
-                </div>
-                <div>
-                    <div style="color: var(--fg3); font-size: 11px; margin-bottom: 4px">RELATIVE</div>
-                    <div style="color: var(--fg2); font-size: 12px">${fmt.relative}</div>
-                </div>
-            `;
+            this._renderGenOutput(ms, genOut);
         };
 
         // Preset buttons
         document.querySelectorAll('[data-preset]').forEach(btn => {
             btn.onclick = () => {
-                const preset = btn.dataset.preset;
-                const ms = epoch.presets[preset]();
+                this._stopLive();
                 document.getElementById('generate-timestamp-input').value = '';
-                const fmt = epoch.format(ms);
-                genOut.innerHTML = `
-                    <div style="margin-bottom: 12px">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px">
-                            <div style="color: var(--fg3); font-size: 11px">UNIX (SECONDS)</div>
-                            <button class="output-copy" onclick="navigator.clipboard.writeText('${fmt.unix}'); toast.show('copied')" style="position: static; padding: 2px 8px">copy</button>
-                        </div>
-                        <div>${fmt.unix}</div>
-                    </div>
-                    <div style="margin-bottom: 12px">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px">
-                            <div style="color: var(--fg3); font-size: 11px">MILLISECONDS</div>
-                            <button class="output-copy" onclick="navigator.clipboard.writeText('${fmt.ms}'); toast.show('copied')" style="position: static; padding: 2px 8px">copy</button>
-                        </div>
-                        <div>${fmt.ms}</div>
-                    </div>
-                    <div style="margin-bottom: 12px">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px">
-                            <div style="color: var(--fg3); font-size: 11px">ISO 8601</div>
-                            <button class="output-copy" onclick="navigator.clipboard.writeText('${fmt.iso}'); toast.show('copied')" style="position: static; padding: 2px 8px">copy</button>
-                        </div>
-                        <div>${fmt.iso}</div>
-                    </div>
-                    <div style="margin-bottom: 12px">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px">
-                            <div style="color: var(--fg3); font-size: 11px">RFC 2822</div>
-                            <button class="output-copy" onclick="navigator.clipboard.writeText('${fmt.rfc2822}'); toast.show('copied')" style="position: static; padding: 2px 8px">copy</button>
-                        </div>
-                        <div>${fmt.rfc2822}</div>
-                    </div>
-                    <div style="margin-bottom: 12px">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px">
-                            <div style="color: var(--fg3); font-size: 11px">SQL DATETIME</div>
-                            <button class="output-copy" onclick="navigator.clipboard.writeText('${fmt.sql}'); toast.show('copied')" style="position: static; padding: 2px 8px">copy</button>
-                        </div>
-                        <div>${fmt.sql}</div>
-                    </div>
-                    <div>
-                        <div style="color: var(--fg3); font-size: 11px; margin-bottom: 4px">RELATIVE</div>
-                        <div style="color: var(--fg2); font-size: 12px">${fmt.relative}</div>
-                    </div>
-                `;
+                this._renderGenOutput(epoch.presets[btn.dataset.preset](), genOut);
             };
         });
+
+        // Live clock button
+        document.getElementById('live-btn').onclick = () => {
+            if (this._liveInterval) {
+                this._stopLive();
+            } else {
+                document.getElementById('generate-timestamp-input').value = '';
+                this._startLive(genOut);
+            }
+        };
 
         // Clear buttons
         document.getElementById('parse-timestamp-clear').onclick = () => {
             document.getElementById('parse-timestamp-input').value = '';
             parseOut.innerHTML = '';
+            lastParsed = null;
         };
 
         document.getElementById('generate-timestamp-clear').onclick = () => {
+            this._stopLive();
             document.getElementById('generate-timestamp-input').value = '';
             genOut.innerHTML = '';
         };
