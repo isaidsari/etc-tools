@@ -99,7 +99,7 @@ const dataStruct = {
                     <div style="display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 16px;">
                         <div class="field" style="flex: 1; min-width: 250px;">
                             <label>raw hex data</label>
-                            <textarea id="hex-input" placeholder="0A 14 00 ..." style="font-family: var(--font); height: 180px;"></textarea>
+                            <textarea id="hex-input" placeholder="04 30 00 ..." style="font-family: var(--font); height: 180px;"></textarea>
                         </div>
                         
                         <div class="field" style="flex: 1; min-width: 250px;">

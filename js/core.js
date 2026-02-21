@@ -71,9 +71,6 @@ const router = {
                 history.replaceState(null, null, '#' + toolId);
             }
 
-            // Re-init tabs and copy buttons for new content
-            initTabs();
-            initCopyButtons();
         }
     },
 
@@ -167,9 +164,10 @@ const palette = {
     open() {
         this.el.classList.add('open');
         this.input.value = '';
+        const currentIndex = tools.findIndex(t => t.id === currentTool);
+        this.index = currentIndex >= 0 ? currentIndex : 0;
         this.render(tools);
         this.input.focus();
-        this.index = 0;
         this.updateSelection();
     },
 
@@ -246,14 +244,7 @@ const palette = {
 // ============================================
 
 function initTabs() {
-    document.querySelectorAll('.tool-tab').forEach(tab => {
-        tab.onclick = () => {
-            document.querySelectorAll('.tool-tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-            tab.classList.add('active');
-            document.getElementById(tab.dataset.panel).classList.add('active');
-        };
-    });
+    // Handled via event delegation in initTabDelegation(), called once at startup
 }
 
 // ============================================
@@ -261,19 +252,23 @@ function initTabs() {
 // ============================================
 
 function initCopyButtons() {
-    document.querySelectorAll('.output-copy').forEach(btn => {
-        btn.onclick = async () => {
-            const output = document.getElementById(btn.dataset.target);
-            const text = output.textContent.trim();
-            if (!text) return;
+    // Handled via event delegation in initCopyDelegation(), called once at startup
+}
 
-            try {
-                await navigator.clipboard.writeText(text);
-                toast.show('copied');
-            } catch {
-                toast.show('failed');
-            }
-        };
+function initCopyDelegation() {
+    document.addEventListener('click', async (e) => {
+        const btn = e.target.closest('.output-copy');
+        if (!btn) return;
+        const output = document.getElementById(btn.dataset.target);
+        if (!output) return;
+        const text = output.textContent.trim();
+        if (!text) return;
+        try {
+            await navigator.clipboard.writeText(text);
+            toast.show('copied');
+        } catch {
+            toast.show('failed');
+        }
     });
 }
 
@@ -307,13 +302,25 @@ function initKeyboardShortcuts() {
 // Initialize
 // ============================================
 
+function initTabDelegation() {
+    document.addEventListener('click', (e) => {
+        const tab = e.target.closest('.tool-tab');
+        if (!tab) return;
+        document.querySelectorAll('.tool-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+        tab.classList.add('active');
+        const panel = document.getElementById(tab.dataset.panel);
+        if (panel) panel.classList.add('active');
+    });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     initTheme();
     router.init();
     toast.init();
     palette.init();
-    initTabs();
-    initCopyButtons();
+    initTabDelegation();
+    initCopyDelegation();
     initKeyboardShortcuts();
 
     // Theme toggle
