@@ -8,54 +8,50 @@
 
 :root {
     --font: 'JetBrains Mono', monospace;
-    /* --font: 'IBM Plex Mono', monospace; */
 
-    --bg: #fafafa;
-    --fg: #111;
-    --fg2: #666;
-    --fg3: #999;
-    --border: #e4e4e4;
-    --color-ok: #4CAF50;
-    --color-err: #ef5350;
-    --radius: 2px;
-}
-
-@media (prefers-color-scheme: dark) {
-    :root {
-        --bg: #111;
-        --fg: #eee;
-        --fg2: #888;
-        --fg3: #555;
-        --border: #2a2a2a;
-        --color-ok: #66BB6A;
-        --color-err: #EF5350;
-    }
+    --bg:        #131416;
+    --bg2:       #1c1e22;
+    --fg:        #c0bdb5;
+    --fg2:       #555860;
+    --fg3:       #34373d;
+    --border:    rgba(255, 255, 255, 0.08);
+    --accent:    #c9a84c;
+    --color-ok:  #5aaa70;
+    --color-err: #cc5555;
+    --radius:    5px;
+    --shadow:    0 0 0 1px rgba(255,255,255,0.05), 0 8px 32px rgba(0,0,0,0.5);
 }
 
 [data-theme="light"] {
-    --bg: #fafafa;
-    --fg: #111;
-    --fg2: #666;
-    --fg3: #999;
-    --border: #ddd;
-    --color-ok: #4CAF50;
-    --color-err: #ef5350;
+    --bg:        #f0ede8;
+    --bg2:       #faf8f4;
+    --fg:        #202228;
+    --fg2:       #696c76;
+    --fg3:       #adb0b8;
+    --border:    rgba(0, 0, 0, 0.09);
+    --accent:    #9a7a2e;
+    --color-ok:  #3d9e5f;
+    --color-err: #c44a4a;
+    --shadow:    0 0 0 1px rgba(0,0,0,0.06), 0 4px 20px rgba(0,0,0,0.08);
 }
 
 [data-theme="dark"] {
-    --bg: #111;
-    --fg: #eee;
-    --fg2: #888;
-    --fg3: #555;
-    --border: #2a2a2a;
-    --color-ok: #66BB6A;
-    --color-err: #EF5350;
+    --bg:        #131416;
+    --bg2:       #1c1e22;
+    --fg:        #c0bdb5;
+    --fg2:       #555860;
+    --fg3:       #34373d;
+    --border:    rgba(255, 255, 255, 0.08);
+    --accent:    #c9a84c;
+    --color-ok:  #5aaa70;
+    --color-err: #cc5555;
+    --shadow:    0 0 0 1px rgba(255,255,255,0.05), 0 8px 32px rgba(0,0,0,0.5);
 }
 
 html {
     font-family: var(--font);
     font-size: 13px;
-    line-height: 1.6;
+    line-height: 1.7;
     background: var(--bg);
     color: var(--fg);
 }
@@ -73,9 +69,8 @@ a {
 /* -- header */
 
 header {
-    border-bottom: 1px solid var(--border);
-    padding: 0 20px;
-    height: 48px;
+    padding: 0 32px;
+    height: 56px;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -89,51 +84,49 @@ header {
     display: flex;
     align-items: center;
     text-decoration: none;
-    font-weight: 500;
+    font-weight: 400;
+    font-size: 14px;
+    color: var(--fg2);
 }
 
 .cursor {
     display: inline-block;
-    width: 8px;
-    height: 16px;
-    background: var(--fg);
-    margin-left: 2px;
-    animation: blink 1s step-end infinite;
+    width: 7px;
+    height: 14px;
+    background: var(--accent);
+    margin-left: 3px;
+    border-radius: 1px;
+    animation: blink 1.2s step-end infinite;
 }
 
 @keyframes blink {
-
-    0%,
-    100% {
-        opacity: 1;
-    }
-
-    50% {
-        opacity: 0;
-    }
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0; }
 }
 
 .header-right {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 10px;
 }
 
 .tool-trigger {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 6px 12px;
-    background: none;
+    padding: 6px 14px;
+    background: var(--bg2);
     border: 1px solid var(--border);
     border-radius: var(--radius);
-    color: var(--fg);
+    color: var(--fg2);
     font: inherit;
+    font-size: 12px;
     cursor: pointer;
+    transition: color 0.2s;
 }
 
 .tool-trigger:hover {
-    border-color: var(--fg3);
+    color: var(--fg);
 }
 
 .tool-trigger .scope {
@@ -142,18 +135,19 @@ header {
 
 .tool-trigger kbd {
     font: inherit;
-    font-size: 11px;
+    font-size: 10px;
     color: var(--fg3);
-    margin-left: 8px;
+    margin-left: 2px;
 }
 
 .theme-switch {
-    font-size: 12px;
+    font: inherit;
+    font-size: 11px;
     color: var(--fg3);
     background: none;
     border: none;
-    font: inherit;
     cursor: pointer;
+    transition: color 0.15s;
 }
 
 .theme-switch:hover {
@@ -165,12 +159,14 @@ header {
 .palette-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.5);
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
     z-index: 100;
     display: none;
     align-items: flex-start;
     justify-content: center;
-    padding-top: 100px;
+    padding-top: 80px;
 }
 
 .palette-overlay.open {
@@ -180,10 +176,10 @@ header {
 .palette {
     width: 100%;
     max-width: 480px;
-    background: var(--bg);
+    background: var(--bg2);
     border: 1px solid var(--border);
-    border-radius: var(--radius);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+    border-radius: 8px;
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.04), 0 32px 64px rgba(0,0,0,0.5);
     overflow: hidden;
 }
 
@@ -220,11 +216,19 @@ header {
     text-align: left;
     font: inherit;
     color: var(--fg);
+    transition: background 0.15s;
 }
 
-.palette-item:hover,
+.palette-item:hover {
+    background: color-mix(in srgb, var(--fg) 5%, transparent);
+}
+
 .palette-item.selected {
-    background: color-mix(in srgb, var(--fg) 8%, var(--bg));
+    background: color-mix(in srgb, var(--fg) 8%, transparent);
+}
+
+.palette-item.selected .name {
+    color: var(--fg);
 }
 
 .palette-item .name {
@@ -243,7 +247,7 @@ header {
 }
 
 .palette-empty {
-    padding: 20px 16px;
+    padding: 24px 16px;
     color: var(--fg3);
     text-align: center;
 }
@@ -252,38 +256,39 @@ header {
 
 main {
     flex: 1;
-    padding: 32px 20px;
-    max-width: 640px;
+    padding: 48px 32px;
+    max-width: 700px;
     margin: 0 auto;
     width: 100%;
 }
 
 .tool-title {
     font-size: 11px;
-    font-weight: 500;
+    font-weight: 400;
     color: var(--fg3);
-    margin-bottom: 4px;
+    margin-bottom: 6px;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.1em;
 }
 
 .tool-desc {
     font-size: 12px;
     color: var(--fg3);
-    margin-bottom: 20px;
+    margin-bottom: 28px;
 }
 
 .tz-select {
     margin-left: auto;
-    background: var(--bg);
-    color: var(--fg3);
+    background: var(--bg2);
+    color: var(--fg2);
     border: none;
     border-left: 1px solid var(--border);
     padding: 0 14px;
     font: inherit;
-    font-size: 13px;
+    font-size: 12px;
     cursor: pointer;
     outline: none;
+    transition: color 0.15s;
 }
 
 .tz-select:hover {
@@ -293,25 +298,31 @@ main {
 /* -- tool container */
 
 .tool {
+    background: var(--bg2);
     border: 1px solid var(--border);
     border-radius: var(--radius);
     overflow: hidden;
+    box-shadow: var(--shadow);
 }
 
 .tool-tabs {
     display: flex;
     border-bottom: 1px solid var(--border);
+    padding: 0 20px;
+    gap: 4px;
 }
 
 .tool-tab {
-    flex: 1;
-    padding: 12px;
+    padding: 11px 12px;
     background: none;
     border: none;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
     font: inherit;
+    font-size: 12px;
     color: var(--fg3);
     cursor: pointer;
-    position: relative;
+    transition: color 0.15s, border-color 0.15s;
 }
 
 .tool-tab:hover {
@@ -320,20 +331,11 @@ main {
 
 .tool-tab.active {
     color: var(--fg);
-}
-
-.tool-tab.active::after {
-    content: '';
-    position: absolute;
-    bottom: -1px;
-    left: 16px;
-    right: 16px;
-    height: 1px;
-    background: var(--fg);
+    border-bottom-color: var(--accent);
 }
 
 .tool-body {
-    padding: 20px;
+    padding: 22px 24px 26px;
 }
 
 .panel {
@@ -352,19 +354,20 @@ label {
     color: var(--fg3);
     margin-bottom: 6px;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.06em;
 }
 
 textarea {
     width: 100%;
-    background: var(--bg);
+    background: color-mix(in srgb, var(--bg) 80%, transparent);
     border: 1px solid var(--border);
     border-radius: var(--radius);
     color: var(--fg);
     font: inherit;
-    padding: 12px;
+    padding: 10px 12px;
     resize: vertical;
     min-height: 80px;
+    transition: border-color 0.2s;
 }
 
 textarea:focus {
@@ -393,7 +396,7 @@ textarea::placeholder {
     margin: 0;
     text-transform: none;
     letter-spacing: normal;
-    font-size: 13px;
+    font-size: 12px;
 }
 
 .seg input {
@@ -402,22 +405,22 @@ textarea::placeholder {
 
 .seg span {
     display: block;
-    padding: 8px 14px;
+    padding: 5px 12px;
     border: 1px solid var(--border);
-    color: var(--fg2);
+    border-radius: var(--radius);
+    color: var(--fg3);
     cursor: pointer;
-    transition: all 0.1s;
+    transition: color 0.15s, background 0.15s, border-color 0.15s;
 }
 
 .seg span:hover {
-    border-color: var(--fg3);
-    color: var(--fg);
+    color: var(--fg2);
 }
 
 .seg input:checked+span {
-    border-color: var(--fg);
+    background: color-mix(in srgb, var(--fg) 9%, transparent);
+    border-color: color-mix(in srgb, var(--fg) 22%, transparent);
     color: var(--fg);
-    background: color-mix(in srgb, var(--fg) 5%, var(--bg));
 }
 
 .seg-label {
@@ -426,7 +429,7 @@ textarea::placeholder {
     color: var(--fg3);
     margin-bottom: 6px;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.06em;
 }
 
 /* -- buttons */
@@ -438,29 +441,30 @@ textarea::placeholder {
 }
 
 .btn {
-    padding: 10px 24px;
+    padding: 8px 18px;
     font: inherit;
+    font-size: 12px;
     cursor: pointer;
     border: 1px solid var(--border);
     border-radius: var(--radius);
     background: none;
     color: var(--fg2);
-    transition: border-color 0.1s, color 0.1s;
+    transition: color 0.15s, border-color 0.15s;
 }
 
 .btn:hover {
-    border-color: var(--fg2);
     color: var(--fg);
+    border-color: var(--fg3);
 }
 
 .btn-primary {
-    background: var(--fg);
-    border-color: var(--fg);
+    background: var(--accent);
+    border-color: var(--accent);
     color: var(--bg);
 }
 
 .btn-primary:hover {
-    opacity: 0.85;
+    opacity: 0.9;
     color: var(--bg);
 }
 
@@ -471,12 +475,13 @@ textarea::placeholder {
 }
 
 .output {
-    background: color-mix(in srgb, var(--fg) 3%, var(--bg));
+    background: color-mix(in srgb, var(--bg) 80%, transparent);
     border: 1px solid var(--border);
     border-radius: var(--radius);
-    padding: 14px;
-    min-height: 56px;
+    padding: 12px 14px;
+    min-height: 52px;
     word-break: break-all;
+    line-height: 1.7;
 }
 
 .output:empty::before {
@@ -488,14 +493,15 @@ textarea::placeholder {
     position: absolute;
     top: 8px;
     right: 8px;
-    padding: 4px 10px;
+    padding: 3px 10px;
     font: inherit;
-    font-size: 11px;
-    background: var(--bg);
+    font-size: 10px;
+    background: var(--bg2);
     border: 1px solid var(--border);
     border-radius: var(--radius);
     color: var(--fg3);
     cursor: pointer;
+    transition: color 0.15s;
 }
 
 .output-copy:hover {
@@ -513,16 +519,17 @@ textarea::placeholder {
 .ref {
     border: 1px solid var(--border);
     border-radius: var(--radius);
-    margin-top: 16px;
+    margin-top: 24px;
     overflow: hidden;
 }
 
 .ref summary {
     padding: 12px 16px;
     cursor: pointer;
-    color: var(--fg2);
+    color: var(--fg3);
     font-size: 12px;
     list-style: none;
+    transition: color 0.15s;
 }
 
 .ref summary::-webkit-details-marker {
@@ -531,7 +538,6 @@ textarea::placeholder {
 
 .ref summary::before {
     content: '+ ';
-    color: var(--fg3);
 }
 
 .ref[open] summary::before {
@@ -539,7 +545,7 @@ textarea::placeholder {
 }
 
 .ref summary:hover {
-    color: var(--fg);
+    color: var(--fg2);
 }
 
 .ref[open] summary {
@@ -565,7 +571,10 @@ td {
 
 th {
     color: var(--fg3);
-    font-weight: 500;
+    font-weight: 600;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
 }
 
 tr:last-child td {
@@ -573,9 +582,9 @@ tr:last-child td {
 }
 
 code {
-    background: color-mix(in srgb, var(--fg) 8%, var(--bg));
-    border-radius: var(--radius);
-    padding: 2px 6px;
+    background: color-mix(in srgb, var(--fg) 8%, var(--bg2));
+    border-radius: 4px;
+    padding: 1px 5px;
     font-size: 12px;
 }
 
@@ -584,6 +593,7 @@ code {
     margin-top: 12px;
     font-size: 12px;
     color: var(--fg3);
+    transition: color 0.15s;
 }
 
 .ref-link:hover {
@@ -593,16 +603,16 @@ code {
 /* -- footer */
 
 footer {
-    border-top: 1px solid var(--border);
-    padding: 12px 20px;
+    padding: 20px 32px;
     font-size: 11px;
     color: var(--fg3);
     text-align: center;
 }
 
 footer a {
-    color: var(--fg2);
+    color: var(--fg3);
     text-decoration: none;
+    transition: color 0.15s;
 }
 
 footer a:hover {
@@ -613,17 +623,19 @@ footer a:hover {
 
 .toast {
     position: fixed;
-    bottom: 20px;
+    bottom: 24px;
     left: 50%;
     transform: translateX(-50%) translateY(60px);
-    background: var(--fg);
-    color: var(--bg);
-    padding: 10px 20px;
+    background: var(--bg2);
+    color: var(--fg);
+    border: 1px solid var(--border);
+    padding: 8px 18px;
     border-radius: var(--radius);
     font-size: 12px;
     opacity: 0;
     transition: all 0.15s;
     pointer-events: none;
+    box-shadow: var(--shadow);
 }
 
 .toast.show {
@@ -635,11 +647,11 @@ footer a:hover {
 
 @media (max-width: 540px) {
     header {
-        padding: 0 16px;
+        padding: 0 20px;
     }
 
     main {
-        padding: 24px 16px;
+        padding: 28px 20px;
     }
 
     .tool-trigger kbd {
@@ -650,8 +662,12 @@ footer a:hover {
         margin: 0 16px;
     }
 
+    .palette-overlay {
+        padding-top: 60px;
+    }
+
     .seg span {
-        padding: 8px 10px;
+        padding: 6px 10px;
         font-size: 12px;
     }
 }
