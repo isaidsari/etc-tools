@@ -1,7 +1,5 @@
 /* /etc/tools - minimal developer utilities */
 
-/* Fonts loaded via <link> in HTML for better performance */
-
 * {
     margin: 0;
     padding: 0;
@@ -16,9 +14,10 @@
     --fg: #111;
     --fg2: #666;
     --fg3: #999;
-    --border: #ddd;
+    --border: #e4e4e4;
     --color-ok: #4CAF50;
     --color-err: #ef5350;
+    --radius: 2px;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -27,7 +26,7 @@
         --fg: #eee;
         --fg2: #888;
         --fg3: #555;
-        --border: #333;
+        --border: #2a2a2a;
         --color-ok: #66BB6A;
         --color-err: #EF5350;
     }
@@ -48,7 +47,7 @@
     --fg: #eee;
     --fg2: #888;
     --fg3: #555;
-    --border: #333;
+    --border: #2a2a2a;
     --color-ok: #66BB6A;
     --color-err: #EF5350;
 }
@@ -71,9 +70,7 @@ a {
     color: inherit;
 }
 
-/* ============================================
-   Header
-   ============================================ */
+/* -- header */
 
 header {
     border-bottom: 1px solid var(--border);
@@ -129,6 +126,7 @@ header {
     padding: 6px 12px;
     background: none;
     border: 1px solid var(--border);
+    border-radius: var(--radius);
     color: var(--fg);
     font: inherit;
     cursor: pointer;
@@ -162,9 +160,7 @@ header {
     color: var(--fg);
 }
 
-/* ============================================
-   Command Palette
-   ============================================ */
+/* -- palette */
 
 .palette-overlay {
     position: fixed;
@@ -186,7 +182,9 @@ header {
     max-width: 480px;
     background: var(--bg);
     border: 1px solid var(--border);
-    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2);
+    border-radius: var(--radius);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+    overflow: hidden;
 }
 
 .palette-input {
@@ -250,9 +248,7 @@ header {
     text-align: center;
 }
 
-/* ============================================
-   Main Content
-   ============================================ */
+/* -- main */
 
 main {
     flex: 1;
@@ -294,12 +290,12 @@ main {
     color: var(--fg);
 }
 
-/* ============================================
-   Tool Container
-   ============================================ */
+/* -- tool container */
 
 .tool {
     border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
 }
 
 .tool-tabs {
@@ -348,9 +344,7 @@ main {
     display: block;
 }
 
-/* ============================================
-   Form Elements
-   ============================================ */
+/* -- form elements */
 
 label {
     display: block;
@@ -365,6 +359,7 @@ textarea {
     width: 100%;
     background: var(--bg);
     border: 1px solid var(--border);
+    border-radius: var(--radius);
     color: var(--fg);
     font: inherit;
     padding: 12px;
@@ -374,7 +369,7 @@ textarea {
 
 textarea:focus {
     outline: none;
-    border-color: var(--fg3);
+    border-color: var(--fg2);
 }
 
 textarea::placeholder {
@@ -434,9 +429,7 @@ textarea::placeholder {
     letter-spacing: 0.05em;
 }
 
-/* ============================================
-   Buttons
-   ============================================ */
+/* -- buttons */
 
 .actions {
     display: flex;
@@ -449,12 +442,14 @@ textarea::placeholder {
     font: inherit;
     cursor: pointer;
     border: 1px solid var(--border);
+    border-radius: var(--radius);
     background: none;
     color: var(--fg2);
+    transition: border-color 0.1s, color 0.1s;
 }
 
 .btn:hover {
-    border-color: var(--fg3);
+    border-color: var(--fg2);
     color: var(--fg);
 }
 
@@ -465,13 +460,11 @@ textarea::placeholder {
 }
 
 .btn-primary:hover {
-    opacity: 0.9;
+    opacity: 0.85;
     color: var(--bg);
 }
 
-/* ============================================
-   Output
-   ============================================ */
+/* -- output */
 
 .output-wrap {
     position: relative;
@@ -480,6 +473,7 @@ textarea::placeholder {
 .output {
     background: color-mix(in srgb, var(--fg) 3%, var(--bg));
     border: 1px solid var(--border);
+    border-radius: var(--radius);
     padding: 14px;
     min-height: 56px;
     word-break: break-all;
@@ -499,6 +493,7 @@ textarea::placeholder {
     font-size: 11px;
     background: var(--bg);
     border: 1px solid var(--border);
+    border-radius: var(--radius);
     color: var(--fg3);
     cursor: pointer;
 }
@@ -513,13 +508,13 @@ textarea::placeholder {
     color: var(--fg3);
 }
 
-/* ============================================
-   Reference Section
-   ============================================ */
+/* -- ref */
 
 .ref {
     border: 1px solid var(--border);
+    border-radius: var(--radius);
     margin-top: 16px;
+    overflow: hidden;
 }
 
 .ref summary {
@@ -579,6 +574,7 @@ tr:last-child td {
 
 code {
     background: color-mix(in srgb, var(--fg) 8%, var(--bg));
+    border-radius: var(--radius);
     padding: 2px 6px;
     font-size: 12px;
 }
@@ -594,9 +590,7 @@ code {
     color: var(--fg);
 }
 
-/* ============================================
-   Footer
-   ============================================ */
+/* -- footer */
 
 footer {
     border-top: 1px solid var(--border);
@@ -615,9 +609,7 @@ footer a:hover {
     color: var(--fg);
 }
 
-/* ============================================
-   Toast
-   ============================================ */
+/* -- toast */
 
 .toast {
     position: fixed;
@@ -627,6 +619,7 @@ footer a:hover {
     background: var(--fg);
     color: var(--bg);
     padding: 10px 20px;
+    border-radius: var(--radius);
     font-size: 12px;
     opacity: 0;
     transition: all 0.15s;
@@ -638,9 +631,7 @@ footer a:hover {
     opacity: 1;
 }
 
-/* ============================================
-   Responsive
-   ============================================ */
+/* -- responsive */
 
 @media (max-width: 540px) {
     header {

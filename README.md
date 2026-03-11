@@ -4,14 +4,20 @@ minimal developer utilities.
 
 ## tools
 
-- **mongo.bindata** - mongodb binary/uuid converter with legacy encoding support
-- **mongo.objectid** - mongodb objectid parser & generator with timestamp extraction
-- **time.epoch** - timestamp converter with multiple format support (unix, iso, excel serial)
+- **mongo.bindata** - mongodb bindata/uuid converter with legacy encoding support (subtypes 0/3/4, c#/java/python byte order)
+- **mongo.objectid** - objectid parser & generator with timestamp extraction
+- **time.epoch** - timestamp converter (unix s/ms/µs/ns, iso 8601, rfc 2822, sql, excel serial, mongodb isodate)
+- **data.crc** - crc & checksum analyzer — 60+ algorithms (crc-4 through crc-64), target matching, custom parameters
+- **data.struct** - binary struct analyzer — parse raw hex against c-struct definitions with interactive byte highlighting
+- **data.float** - ieee 754 float inspector — float32/float64 hex ↔ decimal with bit-level visualization
+- **stream.port** - web serial reader — byte stream capture with configurable frame delimiters (web serial api)
 
 ## usage
 
-open `index.html` in browser. use `ctrl+k` to switch tools.
-navigate via url: `#mongo.bindata`, `#mongo.objectid`, `#time.epoch`
+https://isaidsari.github.io/etc-tools/
+
+or open `index.html` locally. use `ctrl+k` to switch tools.
+navigate via url hash: `#data.crc`, `#data.struct`, `#stream.port`, etc.
 
 ## develop
 
@@ -25,23 +31,19 @@ etc-tools/
 │   └── tools/
 │       ├── mongo-bindata.js
 │       ├── mongo-objectid.js
-│       └── time-epoch.js
+│       ├── time-epoch.js
+│       ├── data-crc.js
+│       ├── data-struct.js
+│       ├── data-float.js
+│       └── stream-port.js
 └── README.md
 ```
 
-add new tools:
-1. create `js/tools/your-tool.js` with render/mount pattern:
-   ```javascript
-   const yourTool = {
-       id: 'scope.name',
-       title: 'Tool Title',
-       render() { return `<div>...html...</div>`; },
-       mount() { /* setup event listeners */ }
-   };
-   window.registerTool(yourTool);
-   ```
-2. add script tag to `index.html`
-3. tool auto-registers and appears in palette
+adding a tool:
+1. create `js/tools/<scope>-<name>.js`, export an object with `id`, `title`, `render()`, `mount()`
+2. call `window.registerTool(...)` at the bottom
+3. add a `<script>` tag in `index.html`
+4. tool appears in the palette automatically
 
 ## license
 

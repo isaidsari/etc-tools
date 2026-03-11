@@ -22,9 +22,7 @@ window.registerTool = (tool) => {
     });
 };
 
-// ============================================
-// Router
-// ============================================
+// -- router
 
 const router = {
     container: null,
@@ -42,7 +40,7 @@ const router = {
         // Unmount current tool
         if (currentTool && registeredTools[currentTool]) {
             const prev = registeredTools[currentTool];
-            if (prev.unmount) prev.unmount();
+            try { if (prev.unmount) prev.unmount(); } catch (e) { console.error('unmount error', e); }
         }
 
         // Render new tool
@@ -55,7 +53,7 @@ const router = {
             currentTool = toolId;
 
             // Mount tool (setup event handlers)
-            if (tool.mount) tool.mount();
+            try { if (tool.mount) tool.mount(); } catch (e) { console.error('mount error', e); }
 
             // Update header
             const toolMeta = tools.find(t => t.id === toolId);
@@ -92,9 +90,7 @@ const router = {
     }
 };
 
-// ============================================
-// Theme
-// ============================================
+// -- theme
 
 function initTheme() {
     const saved = localStorage.getItem('theme');
@@ -114,9 +110,7 @@ function toggleTheme() {
     setTheme(current === 'dark' ? 'light' : 'dark');
 }
 
-// ============================================
-// Toast
-// ============================================
+// -- toast
 
 const toast = {
     el: null,
@@ -135,9 +129,7 @@ const toast = {
     }
 };
 
-// ============================================
-// Command Palette
-// ============================================
+// -- palette
 
 const palette = {
     el: null,
@@ -239,21 +231,7 @@ const palette = {
     }
 };
 
-// ============================================
-// Tabs
-// ============================================
-
-function initTabs() {
-    // Handled via event delegation in initTabDelegation(), called once at startup
-}
-
-// ============================================
-// Copy
-// ============================================
-
-function initCopyButtons() {
-    // Handled via event delegation in initCopyDelegation(), called once at startup
-}
+// -- copy
 
 function initCopyDelegation() {
     document.addEventListener('click', async (e) => {
@@ -272,35 +250,45 @@ function initCopyDelegation() {
     });
 }
 
-// ============================================
-// Utilities
-// ============================================
+// -- utilities
 
 function radio(name) {
     return document.querySelector(`input[name="${name}"]:checked`)?.value;
 }
 
-// ============================================
-// Global Keyboard Shortcuts
-// ============================================
+function bindCtrlEnter(inputId, actionId) {
+    document.getElementById(inputId)?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+            e.preventDefault();
+            document.getElementById(actionId)?.click();
+        }
+    });
+}
+
+async function safeCopy(text) {
+    try {
+        await navigator.clipboard.writeText(text);
+        toast.show('copied');
+    } catch {
+        toast.show('failed');
+    }
+}
+
+// -- keyboard shortcuts
 
 function initKeyboardShortcuts() {
-    document.onkeydown = (e) => {
-        // Ctrl/Cmd + K - open palette
+    document.addEventListener('keydown', (e) => {
         if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
             e.preventDefault();
             palette.open();
         }
-        // Escape - close palette
         if (e.key === 'Escape') {
             palette.close();
         }
-    };
+    });
 }
 
-// ============================================
-// Initialize
-// ============================================
+// -- init
 
 function initTabDelegation() {
     document.addEventListener('click', (e) => {
