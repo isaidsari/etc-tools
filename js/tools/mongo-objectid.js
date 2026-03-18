@@ -25,8 +25,17 @@ const objectid = {
     generate(timestamp) {
         const ts = timestamp ? Math.floor(timestamp / 1000) : Math.floor(Date.now() / 1000);
         const hex = ts.toString(16).padStart(8, '0');
-        const random = Array.from({ length: 10 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
-        const counter = Math.floor(Math.random() * 16777216).toString(16).padStart(6, '0');
+        const entropy = new Uint8Array(8);
+        if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+            crypto.getRandomValues(entropy);
+        } else {
+            for (let i = 0; i < entropy.length; i++) {
+                entropy[i] = Math.floor(Math.random() * 256);
+            }
+        }
+
+        const random = Array.from(entropy.slice(0, 5), b => b.toString(16).padStart(2, '0')).join('');
+        const counter = ((entropy[5] << 16) | (entropy[6] << 8) | entropy[7]).toString(16).padStart(6, '0');
         return hex + random + counter;
     },
 
@@ -175,7 +184,7 @@ const mongoObjectId = {
                 try {
                     const d = new Date(input);
                     if (isNaN(d.getTime())) {
-                        const unix = parseInt(input);
+                        const unix = parseInt(input, 10);
                         if (isNaN(unix)) throw new Error('invalid date/timestamp');
                         timestamp = unix * 1000;
                     } else {

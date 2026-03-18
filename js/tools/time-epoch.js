@@ -25,14 +25,28 @@ const TZ_OPTIONS = [
 const epoch = {
     parse(input) {
         const s = input.trim();
+        const toSafeNumber = (n, label) => {
+            const max = BigInt(Number.MAX_SAFE_INTEGER);
+            const min = BigInt(Number.MIN_SAFE_INTEGER);
+            if (n > max || n < min) throw new Error(`${label} out of safe range`);
+            return Number(n);
+        };
 
         // Unix timestamp variations
         if (/^\d+$/.test(s)) {
-            const num = s.length <= 10 ? parseInt(s) : BigInt(s);
-            if (s.length === 10) return { unix: parseInt(s), ms: parseInt(s) * 1000, type: 'unix seconds' };
-            if (s.length === 13) return { unix: Math.floor(parseInt(s) / 1000), ms: parseInt(s), type: 'unix milliseconds' };
-            if (s.length === 16) return { unix: Math.floor(Number(num) / 1000000), ms: Math.floor(Number(num) / 1000), type: 'unix microseconds' };
-            if (s.length === 19) return { unix: Math.floor(Number(num) / 1000000000), ms: Math.floor(Number(num) / 1000000), type: 'unix nanoseconds' };
+            const num = s.length <= 13 ? parseInt(s, 10) : BigInt(s);
+            if (s.length === 10) return { unix: parseInt(s, 10), ms: parseInt(s, 10) * 1000, type: 'unix seconds' };
+            if (s.length === 13) return { unix: Math.floor(parseInt(s, 10) / 1000), ms: parseInt(s, 10), type: 'unix milliseconds' };
+            if (s.length === 16) {
+                const unix = toSafeNumber(num / 1000000n, 'unix timestamp');
+                const ms = toSafeNumber(num / 1000n, 'milliseconds');
+                return { unix, ms, type: 'unix microseconds' };
+            }
+            if (s.length === 19) {
+                const unix = toSafeNumber(num / 1000000000n, 'unix timestamp');
+                const ms = toSafeNumber(num / 1000000n, 'milliseconds');
+                return { unix, ms, type: 'unix nanoseconds' };
+            }
         }
 
         // Floating point unix timestamp
@@ -72,7 +86,7 @@ const epoch = {
 
         // Excel serial date (5 digits)
         if (/^\d{5}$/.test(s)) {
-            const days = parseInt(s);
+            const days = parseInt(s, 10);
             const excelEpoch = new Date(1899, 11, 30);
             const ms = excelEpoch.getTime() + (days * 86400000);
             return { unix: Math.floor(ms / 1000), ms, type: 'excel serial date' };

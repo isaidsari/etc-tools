@@ -39,10 +39,11 @@ const structParser = {
     },
 
     parse(hexString, structDef, littleEndian = true) {
-        const cleanHex = hexString.replace(/\s+/g, '').replace(/0x/g, '');
+        const cleanHex = hexString.replace(/\s+/g, '').replace(/0x/gi, '');
         if (cleanHex.length % 2 !== 0) throw new Error('Invalid hex length. Must be even.');
+        if (cleanHex && !/^[0-9a-f]+$/i.test(cleanHex)) throw new Error('Invalid hex characters.');
 
-        const bytes = new Uint8Array(cleanHex.match(/.{1,2}/g)?.map(byte => parseInt(byte, 16)) || []);
+        const bytes = new Uint8Array(cleanHex.match(/.{2}/g)?.map(byte => parseInt(byte, 16)) || []);
         const view = new DataView(bytes.buffer);
 
         const fields = this.parseStructDef(structDef);

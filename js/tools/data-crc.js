@@ -123,7 +123,8 @@ const crcLogic = {
         const clean = str.replace(/\s+/g, '').replace(/0x/gi, '').toLowerCase();
         if (clean.length === 0) return new Uint8Array(0);
         if (clean.length % 2 !== 0) throw new Error('Invalid hex length. Must be even.');
-        return new Uint8Array(clean.match(/.{1,2}/g).map(b => parseInt(b, 16)));
+        if (!/^[0-9a-f]+$/.test(clean)) throw new Error('Invalid hex characters.');
+        return new Uint8Array(clean.match(/.{2}/g).map(b => parseInt(b, 16)));
     },
 
     toHex(num, bytes) {

@@ -30,13 +30,31 @@ const bindata = {
         throw new Error('invalid format');
     },
 
-    toBytes: b64 => Uint8Array.from(atob(b64), c => c.charCodeAt(0)),
-    toB64: bytes => btoa(String.fromCharCode(...bytes)),
+    toBytes(b64) {
+        try {
+            return Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+        } catch {
+            throw new Error('invalid base64');
+        }
+    },
+
+    toB64(bytes) {
+        // Chunk conversion to avoid argument length limits on large inputs.
+        let binary = '';
+        const chunkSize = 0x8000;
+        for (let i = 0; i < bytes.length; i += chunkSize) {
+            const chunk = bytes.subarray(i, i + chunkSize);
+            binary += String.fromCharCode(...chunk);
+        }
+        return btoa(binary);
+    },
+
     toHex: bytes => [...bytes].map(b => b.toString(16).padStart(2, '0')).join(''),
 
     fromHex(hex) {
         const h = hex.replace(/\s/g, '');
         if (h.length % 2) throw new Error('invalid hex');
+        if (h && !/^[0-9a-f]+$/i.test(h)) throw new Error('invalid hex');
         return new Uint8Array(h.match(/.{2}/g).map(b => parseInt(b, 16)));
     },
 
@@ -47,7 +65,7 @@ const bindata = {
 
     uuidToBytes(u) {
         const h = u.replace(/-/g, '');
-        if (h.length !== 32) throw new Error('invalid uuid');
+        if (h.length !== 32 || !/^[0-9a-f]+$/i.test(h)) throw new Error('invalid uuid');
         return this.fromHex(h);
     },
 
