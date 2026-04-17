@@ -167,7 +167,7 @@ const crcLogic = {
             calc: (a) => { const M=65521; let x=1, y=0; for (const b of a) { x=(x+b)%M; y=(y+x)%M; } return ((y<<16)|x)>>>0; } },
 
         // ── CRC-4 ────────────────────────────────────────────────────────────────────
-        { g: 'CRC-4', name: 'CRC-4/G-704 (ITU)',    size: 1, calc: C4(0x3, 0x0, true,  true) },           // check: 7
+        { g: 'CRC-4', name: 'CRC-4/G-704 (ITU)',    size: 1, calc: C4(0x3, 0x0, true,  true) },           // check: 07
 
         // ── CRC-5 ────────────────────────────────────────────────────────────────────
         { g: 'CRC-5', name: 'CRC-5/EPC-C1G2 (EPC)', size: 1, calc: C5(0x09, 0x09) },                     // check: 00
@@ -221,8 +221,8 @@ const crcLogic = {
         { g: 'CRC-16', name: 'CRC-16/GENIBUS',              size: 2, calc: C16(0x1021, 0xFFFF, false, false, 0xFFFF) },        // check: D64E
         { g: 'CRC-16', name: 'CRC-16/GSM',                  size: 2, calc: C16(0x1021, 0x0000, false, false, 0xFFFF) },        // check: CE3C
         { g: 'CRC-16', name: 'CRC-16/IBM-3740',             size: 2, calc: C16(0x1021, 0xFFFF) },                              // check: 29B1  (= CCITT-FALSE)
-        { g: 'CRC-16', name: 'CRC-16/IBM-SDLC (X-25)',      size: 2, calc: C16(0x1021, 0xFFFF, true,  true,  0xF0B8) },        // check: 906E
-        { g: 'CRC-16', name: 'CRC-16/ISO-IEC-14443-3-A',    size: 2, calc: C16(0x1021, 0x6363, true,  true) },                // check: BF05
+        { g: 'CRC-16', name: 'CRC-16/IBM-SDLC (X-25)',      size: 2, calc: C16(0x1021, 0xFFFF, true,  true,  0xFFFF) },        // check: 906E
+        { g: 'CRC-16', name: 'CRC-16/ISO-IEC-14443-3-A',    size: 2, calc: C16(0x1021, 0xC6C6, true,  true) },                // check: BF05
         { g: 'CRC-16', name: 'CRC-16/KERMIT',               size: 2, calc: C16(0x1021, 0x0000, true,  true) },                // check: 2189
         { g: 'CRC-16', name: 'CRC-16/LJ1200',               size: 2, calc: C16(0x6F63) },                                     // check: BDF4
         { g: 'CRC-16', name: 'CRC-16/M17',                  size: 2, calc: C16(0x5935, 0xFFFF) },                              // check: 772B
@@ -258,7 +258,7 @@ const crcLogic = {
         { g: 'CRC-64', name: 'CRC-64/ECMA-182',      size: 8, calc: C64(0x42F0E1EBA9EA3693n) },                                                                       // check: 6C40DF5F0B497347
         { g: 'CRC-64', name: 'CRC-64/WE',            size: 8, calc: C64(0x42F0E1EBA9EA3693n, 0xFFFFFFFFFFFFFFFFn, false, false, 0xFFFFFFFFFFFFFFFFn) },                // check: 62EC59E3F1A4F00A
         { g: 'CRC-64', name: 'CRC-64/XZ',            size: 8, calc: C64(0x42F0E1EBA9EA3693n, 0xFFFFFFFFFFFFFFFFn, true,  true,  0xFFFFFFFFFFFFFFFFn) },                // check: 995DC9BBDF1939FA
-        { g: 'CRC-64', name: 'CRC-64/GO-ISO',        size: 8, calc: C64(0xAD93D23594C935A9n, 0xFFFFFFFFFFFFFFFFn, true,  true,  0xFFFFFFFFFFFFFFFFn) },                // check: B90956C775A41001
+        { g: 'CRC-64', name: 'CRC-64/GO-ISO',        size: 8, calc: C64(0x000000000000001Bn, 0xFFFFFFFFFFFFFFFFn, true,  true,  0xFFFFFFFFFFFFFFFFn) },                // check: B90956C775A41001
     ]
 };
 
@@ -267,8 +267,6 @@ const crcLogic = {
 const dataCrc = {
     id: 'data.crc',
     title: 'CRC & Checksum Analyzer',
-
-    _inputStyle: 'width: 100%; padding: 10px; font-family: var(--font); background: var(--bg); border: 1px solid var(--border); color: var(--fg); outline: none;',
 
     render() {
         return `
@@ -285,12 +283,12 @@ const dataCrc = {
                 <div class="tool-body panel active" id="crc-analyze">
                     <div class="field">
                         <label>raw hex payload (without crc bytes)</label>
-                        <textarea id="crc-input" placeholder="01 03 00 00 00 0A" style="font-family: var(--font); height: 80px;"></textarea>
+                        <textarea id="crc-input" placeholder="01 03 00 00 00 0A" style="height: 80px;"></textarea>
                     </div>
 
                     <div class="field" style="max-width: 300px;">
                         <label>target match (optional)</label>
-                        <input type="text" id="crc-target" placeholder="expected checksum, e.g. C5 CD" style="${this._inputStyle}">
+                        <input type="text" id="crc-target" placeholder="expected checksum, e.g. C5 CD">
                     </div>
 
                     <div class="actions">
@@ -319,19 +317,19 @@ const dataCrc = {
                     <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 4px;">
                         <div class="field" style="flex: 0 0 80px;">
                             <label>width</label>
-                            <input type="number" id="crc-w" value="8" min="1" max="64" style="${this._inputStyle}">
+                            <input type="number" id="crc-w" value="8" min="1" max="64">
                         </div>
                         <div class="field" style="flex: 1; min-width: 110px;">
                             <label>poly (hex)</label>
-                            <input type="text" id="crc-p" value="07" placeholder="07" style="${this._inputStyle}">
+                            <input type="text" id="crc-p" value="07" placeholder="07">
                         </div>
                         <div class="field" style="flex: 1; min-width: 110px;">
                             <label>init (hex)</label>
-                            <input type="text" id="crc-i" value="00" placeholder="00" style="${this._inputStyle}">
+                            <input type="text" id="crc-i" value="00" placeholder="00">
                         </div>
                         <div class="field" style="flex: 1; min-width: 110px;">
                             <label>xorOut (hex)</label>
-                            <input type="text" id="crc-xo" value="00" placeholder="00" style="${this._inputStyle}">
+                            <input type="text" id="crc-xo" value="00" placeholder="00">
                         </div>
                     </div>
 
@@ -346,7 +344,7 @@ const dataCrc = {
 
                     <div class="field">
                         <label>hex payload</label>
-                        <textarea id="crc-custom-input" placeholder="01 03 00 00 00 0A" style="font-family: var(--font); height: 80px;"></textarea>
+                        <textarea id="crc-custom-input" placeholder="01 03 00 00 00 0A" style="height: 80px;"></textarea>
                     </div>
 
                     <div class="actions">

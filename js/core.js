@@ -37,6 +37,9 @@ const router = {
             return;
         }
 
+        // Re-selecting the active tool would wipe its input on remount
+        if (toolId === currentTool) return;
+
         // Unmount current tool
         if (currentTool && registeredTools[currentTool]) {
             const prev = registeredTools[currentTool];

@@ -89,19 +89,33 @@ const bindata = {
         return { val: this.toHex(bytes), type: `subtype ${st ?? '?'}`, len: bytes.length };
     },
 
-    encode(input, sub, fmt, enc) {
+    encode(input, sub, fmt, enc, inputType = 'auto') {
         const s = input.trim();
         let bytes;
+        let isUuidInput = false;
 
-        if (this.isUuid(s)) {
-            const ub = this.uuidToBytes(s);
-            bytes = +sub === 3 ? (this.enc[enc] || this.enc.csharp).from(ub) : ub;
+        if (inputType === 'text') {
+            bytes = new TextEncoder().encode(s);
+        } else if (inputType === 'hex') {
+            bytes = this.fromHex(s);
+        } else if (inputType === 'base64') {
+            bytes = this.toBytes(s);
+        } else if (inputType === 'uuid') {
+            bytes = this.uuidToBytes(s);
+            isUuidInput = true;
+        } else if (this.isUuid(s)) {
+            bytes = this.uuidToBytes(s);
+            isUuidInput = true;
         } else if (/^[0-9a-f\s]+$/i.test(s)) {
             bytes = this.fromHex(s);
         } else if (/^[A-Za-z0-9+/]+=*$/.test(s)) {
             bytes = this.toBytes(s);
         } else {
             bytes = new TextEncoder().encode(s);
+        }
+
+        if (isUuidInput && +sub === 3) {
+            bytes = (this.enc[enc] || this.enc.csharp).from(bytes);
         }
 
         const b64 = this.toB64(bytes);
@@ -166,6 +180,15 @@ const mongoBindata = {
                     <div class="field">
                         <label>input</label>
                         <textarea id="encode-input" placeholder="uuid string&#10;hex bytes&#10;plain text"></textarea>
+                    </div>
+
+                    <div class="seg">
+                        <span class="seg-label">input type</span>
+                        <label><input type="radio" name="e-input" value="auto" checked><span>auto</span></label>
+                        <label><input type="radio" name="e-input" value="text"><span>text</span></label>
+                        <label><input type="radio" name="e-input" value="hex"><span>hex</span></label>
+                        <label><input type="radio" name="e-input" value="base64"><span>base64</span></label>
+                        <label><input type="radio" name="e-input" value="uuid"><span>uuid</span></label>
                     </div>
 
                     <div class="seg">
@@ -252,7 +275,7 @@ const mongoBindata = {
             }
 
             try {
-                encOut.textContent = bindata.encode(input, radio('e-sub'), radio('e-fmt'), radio('e-enc'));
+                encOut.textContent = bindata.encode(input, radio('e-sub'), radio('e-fmt'), radio('e-enc'), radio('e-input'));
             } catch (e) {
                 encOut.textContent = '';
                 toast.show(e.message);

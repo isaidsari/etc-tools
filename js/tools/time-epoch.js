@@ -22,6 +22,11 @@ const TZ_OPTIONS = [
     { label: 'Australia/Sydney', value: 'Australia/Sydney' },
 ];
 
+// Excel treats 1900-01-00 as day 0 and (wrongly) includes 1900-02-29, making
+// 1899-12-30 UTC the effective epoch. Must be UTC — using `new Date(1899, 11, 30)`
+// anchors to the browser timezone and skews the day count on either side of midnight.
+const EXCEL_EPOCH_MS = Date.UTC(1899, 11, 30);
+
 const epoch = {
     parse(input) {
         const s = input.trim();
@@ -55,18 +60,20 @@ const epoch = {
             return { unix: Math.floor(unix), ms: Math.floor(unix * 1000), type: 'unix seconds (decimal)' };
         }
 
+        // SQL datetime (YYYY-MM-DD HH:MM:SS) — checked before ISO so the space-separated
+        // form is treated as UTC rather than being handed to the ISO branch which lets
+        // `new Date` interpret it as browser-local.
+        if (/^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}/.test(s)) {
+            const d = new Date(s.replace(' ', 'T') + 'Z');
+            if (isNaN(d.getTime())) throw new Error('invalid sql datetime');
+            return { unix: Math.floor(d.getTime() / 1000), ms: d.getTime(), type: 'sql datetime' };
+        }
+
         // ISO 8601 / RFC 3339
         if (/^\d{4}-\d{2}-\d{2}/.test(s)) {
             const d = new Date(s);
             if (isNaN(d.getTime())) throw new Error('invalid iso date');
             return { unix: Math.floor(d.getTime() / 1000), ms: d.getTime(), type: 'iso 8601' };
-        }
-
-        // SQL datetime (YYYY-MM-DD HH:MM:SS)
-        if (/^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}/.test(s)) {
-            const d = new Date(s.replace(' ', 'T') + 'Z');
-            if (isNaN(d.getTime())) throw new Error('invalid sql datetime');
-            return { unix: Math.floor(d.getTime() / 1000), ms: d.getTime(), type: 'sql datetime' };
         }
 
         // RFC 2822
@@ -87,8 +94,7 @@ const epoch = {
         // Excel serial date (5 digits)
         if (/^\d{5}$/.test(s)) {
             const days = parseInt(s, 10);
-            const excelEpoch = new Date(1899, 11, 30);
-            const ms = excelEpoch.getTime() + (days * 86400000);
+            const ms = EXCEL_EPOCH_MS + (days * 86400000);
             return { unix: Math.floor(ms / 1000), ms, type: 'excel serial date' };
         }
 
@@ -127,7 +133,7 @@ const epoch = {
             sql: sqlDateTime,
             unix,
             ms,
-            excel: Math.floor((ms - new Date(1899, 11, 30).getTime()) / 86400000),
+            excel: Math.floor((ms - EXCEL_EPOCH_MS) / 86400000),
             local,
             tzName,
             relative: this.relative(unix)
@@ -273,8 +279,9 @@ const timeEpoch = {
     },
 
     render() {
+        const savedTz = localStorage.getItem('etc.tz') ?? '';
         const tzOptions = TZ_OPTIONS.map(t =>
-            `<option value="${t.value}">${t.label}</option>`
+            `<option value="${t.value}"${t.value === savedTz ? ' selected' : ''}>${t.label}</option>`
         ).join('');
 
         return `
@@ -378,12 +385,14 @@ const timeEpoch = {
 
         document.getElementById('parse-timestamp-btn').onclick = runParse;
 
-        // Timezone change → re-render parse output if data exists
+        // Timezone change → persist selection and re-render outputs
         document.getElementById('tz-select').onchange = () => {
+            localStorage.setItem('etc.tz', this._getSelectedTz() ?? '');
             if (lastParsed) {
                 const fmt = epoch.format(lastParsed.ms, this._getSelectedTz());
                 this._renderParseOutput(lastParsed, fmt, parseOut);
             }
+            if (this._liveInterval) this._renderGenOutput(Date.now(), genOut);
         };
 
         // Generate timestamp

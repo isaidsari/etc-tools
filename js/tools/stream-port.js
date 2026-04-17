@@ -23,12 +23,12 @@ const streamPort = {
                     <div style="display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 16px;">
                         <div class="field" style="flex: 1; min-width: 120px;">
                             <label>baud rate</label>
-                            <input type="number" id="serial-baud" value="115200" style="width: 100%; padding: 10px; font-family: var(--font); background: var(--bg); border: 1px solid var(--border); color: var(--fg); outline: none;">
+                            <input type="number" id="serial-baud" value="115200">
                         </div>
                         
                         <div class="field" style="flex: 1; min-width: 120px;">
                             <label>frame delimiter (hex)</label>
-                            <input type="text" id="serial-delim" placeholder="e.g., 0A or AA 55" style="width: 100%; padding: 10px; font-family: var(--font); background: var(--bg); border: 1px solid var(--border); color: var(--fg); outline: none;">
+                            <input type="text" id="serial-delim" placeholder="e.g., 0A or AA 55">
                         </div>
                     </div>
 

@@ -181,19 +181,21 @@ const mongoObjectId = {
             let timestamp = null;
 
             if (input) {
-                try {
+                // Length-based sn/ms split for bare numeric input — 13+ digits is ms,
+                // ≤10 is seconds. Falling back to `new Date` first would silently
+                // swallow both (multiplying ms by 1000) in browsers that accept
+                // numeric strings.
+                if (/^\d+$/.test(input)) {
+                    const n = parseInt(input, 10);
+                    timestamp = input.length >= 13 ? n : n * 1000;
+                } else {
                     const d = new Date(input);
                     if (isNaN(d.getTime())) {
-                        const unix = parseInt(input, 10);
-                        if (isNaN(unix)) throw new Error('invalid date/timestamp');
-                        timestamp = unix * 1000;
-                    } else {
-                        timestamp = d.getTime();
+                        genOut.textContent = '';
+                        toast.show('invalid date format');
+                        return;
                     }
-                } catch (e) {
-                    genOut.textContent = '';
-                    toast.show('invalid date format');
-                    return;
+                    timestamp = d.getTime();
                 }
             }
 

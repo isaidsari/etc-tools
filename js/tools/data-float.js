@@ -63,12 +63,11 @@ const dataFloat = {
     _panelHtml(bits) {
         const active  = bits === '32' ? ' active' : '';
         const ph      = bits === '32' ? '3F800000 or 1.0' : '3FF0000000000000 or 1.0';
-        const is      = 'width:100%;padding:10px;font-family:var(--font);background:var(--bg);border:1px solid var(--border);color:var(--fg);outline:none;';
         return `
             <div class="tool-body panel${active}" id="float-${bits}">
                 <div class="field">
                     <label>value</label>
-                    <input type="text" id="fi-${bits}" placeholder="${ph}" style="${is}">
+                    <input type="text" id="fi-${bits}" placeholder="${ph}">
                 </div>
                 <div class="actions">
                     <button class="btn btn-primary" id="fb-hex-${bits}">parse hex</button>

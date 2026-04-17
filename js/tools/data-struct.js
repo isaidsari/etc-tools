@@ -22,8 +22,9 @@ const structParser = {
         const lines = def.split('\n');
         const fields = [];
         for (let line of lines) {
-            line = line.trim();
-            if (!line || line.startsWith('//') || line.startsWith('struct') || line === '{' || line === '}' || line === '};') continue;
+            // Strip inline `//` comments first so "uint8_t flag; // note" still parses.
+            line = line.replace(/\/\/.*$/, '').trim();
+            if (!line || line.startsWith('struct') || line === '{' || line === '}' || line === '};') continue;
 
             const match = line.match(/^([a-z0-9_]+)\s+([a-z0-9_]+)(?:\[(\d+)\])?\s*;?$/i);
             if (match) {
@@ -113,12 +114,12 @@ const dataStruct = {
                     <div style="display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 16px;">
                         <div class="field" style="flex: 1; min-width: 250px;">
                             <label>raw hex data</label>
-                            <textarea id="hex-input" placeholder="04 30 00 ..." style="font-family: var(--font); height: 180px;"></textarea>
+                            <textarea id="hex-input" placeholder="04 30 00 ..." style="height: 180px;"></textarea>
                         </div>
 
                         <div class="field" style="flex: 1; min-width: 250px;">
                             <label>c-struct definition</label>
-                            <textarea id="struct-input" placeholder="struct Payload {&#10;    uint8_t header;&#10;    uint16_t value;&#10;    char name[8];&#10;};" style="font-family: var(--font); height: 180px;"></textarea>
+                            <textarea id="struct-input" placeholder="struct Payload {&#10;    uint8_t header;&#10;    uint16_t value;&#10;    char name[8];&#10;};" style="height: 180px;"></textarea>
                         </div>
                     </div>
 
@@ -136,8 +137,8 @@ const dataStruct = {
                     <div id="interactive-output" style="display: none; border: 1px solid var(--border); background: color-mix(in srgb, var(--fg) 3%, var(--bg));">
                         <div id="struct-summary" style="display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; border-bottom: 1px solid var(--border); font-size: 11px; color: var(--fg3);"></div>
                         <div style="display: flex; flex-wrap: wrap;">
-                            <div id="hex-view" style="flex: 1; padding: 16px; font-family: var(--font); font-size: 13px; line-height: 1.8; border-right: 1px solid var(--border); min-width: 200px;"></div>
-                            <div id="struct-view" style="flex: 1; padding: 16px; font-family: var(--font); font-size: 13px; min-width: 250px;"></div>
+                            <div id="hex-view" style="flex: 1; padding: 16px; font-family: var(--font-mono); font-size: 13px; line-height: 1.8; border-right: 1px solid var(--border); min-width: 200px;"></div>
+                            <div id="struct-view" style="flex: 1; padding: 16px; font-family: var(--font-mono); font-size: 13px; min-width: 250px;"></div>
                         </div>
                     </div>
                 </div>
