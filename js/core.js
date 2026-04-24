@@ -72,6 +72,8 @@ const router = {
                 history.replaceState(null, null, '#' + toolId);
             }
 
+            // Update document title
+            document.title = `/etc/tools · ${toolId}`;
         }
     },
 
@@ -93,24 +95,42 @@ const router = {
     }
 };
 
-// -- theme
+// -- theme (three-way: auto / light / dark)
+
+const THEME_CYCLE = ['auto', 'light', 'dark'];
+const THEME_MEDIA = window.matchMedia('(prefers-color-scheme: dark)');
+
+function resolveTheme(mode) {
+    if (mode === 'auto') return THEME_MEDIA.matches ? 'dark' : 'light';
+    return mode;
+}
+
+function applyTheme(mode) {
+    document.documentElement.dataset.theme = resolveTheme(mode);
+    document.documentElement.dataset.themeMode = mode;
+    localStorage.setItem('theme-mode', mode);
+    const btn = document.getElementById('theme-switch');
+    if (btn) btn.textContent = `[${mode}]`;
+}
 
 function initTheme() {
-    const saved = localStorage.getItem('theme');
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const theme = saved || (prefersDark ? 'dark' : 'light');
-    setTheme(theme);
+    const saved = localStorage.getItem('theme-mode');
+    // back-compat: old 'theme' key with 'dark'/'light' value
+    const legacy = localStorage.getItem('theme');
+    const mode = saved || legacy || 'auto';
+    applyTheme(mode);
+    // When in auto mode, react to system change
+    THEME_MEDIA.addEventListener('change', () => {
+        if (document.documentElement.dataset.themeMode === 'auto') {
+            applyTheme('auto');
+        }
+    });
 }
 
-function setTheme(theme) {
-    document.documentElement.dataset.theme = theme;
-    localStorage.setItem('theme', theme);
-    document.getElementById('theme-switch').textContent = `[${theme === 'dark' ? 'light' : 'dark'}]`;
-}
-
-function toggleTheme() {
-    const current = document.documentElement.dataset.theme;
-    setTheme(current === 'dark' ? 'light' : 'dark');
+function cycleTheme() {
+    const current = document.documentElement.dataset.themeMode || 'auto';
+    const next = THEME_CYCLE[(THEME_CYCLE.indexOf(current) + 1) % THEME_CYCLE.length];
+    applyTheme(next);
 }
 
 // -- toast
@@ -268,6 +288,45 @@ function bindCtrlEnter(inputId, actionId) {
     });
 }
 
+// Debounce input → run, with leading clear when emptied
+function liveBind(input, run, ms = 200) {
+    if (typeof input === 'string') input = document.getElementById(input);
+    if (!input) return;
+    let timer = null;
+    input.addEventListener('input', () => {
+        clearTimeout(timer);
+        timer = setTimeout(run, ms);
+    });
+}
+
+// Set / clear input error state (red border + small error message below).
+// Looks for a sibling `.error-msg` div; creates one inline if missing.
+function setError(input, message) {
+    if (typeof input === 'string') input = document.getElementById(input);
+    if (!input) return;
+    input.classList.add('input-error');
+    let msg = input.parentNode.querySelector('.error-msg');
+    if (!msg) {
+        msg = document.createElement('div');
+        msg.className = 'error-msg';
+        input.parentNode.insertBefore(msg, input.nextSibling);
+    }
+    msg.textContent = message;
+}
+
+function clearError(input) {
+    if (typeof input === 'string') input = document.getElementById(input);
+    if (!input) return;
+    input.classList.remove('input-error');
+    const msg = input.parentNode.querySelector('.error-msg');
+    if (msg) msg.remove();
+}
+
+// Expose for tools
+window.liveBind   = liveBind;
+window.setError   = setError;
+window.clearError = clearError;
+
 async function safeCopy(text) {
     try {
         await navigator.clipboard.writeText(text);
@@ -314,8 +373,8 @@ document.addEventListener('DOMContentLoaded', () => {
     initCopyDelegation();
     initKeyboardShortcuts();
 
-    // Theme toggle
-    document.getElementById('theme-switch').onclick = toggleTheme;
+    // Theme toggle (auto → light → dark → auto …)
+    document.getElementById('theme-switch').onclick = cycleTheme;
 
     // Tool trigger
     document.getElementById('tool-trigger').onclick = () => palette.open();
